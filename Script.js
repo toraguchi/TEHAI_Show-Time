@@ -73,8 +73,6 @@ function callRequest(companyName) {
     const telLink = `tel:${company.phone}`;
     window.location.href = telLink; // 電話をかける
 }
-// 定期的に位置情報を更新するためのインターバル
-const LOCATION_UPDATE_INTERVAL = 60000; // 60秒ごとに更新
 
 // 初期化
 window.onload = () => {
@@ -84,6 +82,36 @@ window.onload = () => {
         getUserLocation();
     }, LOCATION_UPDATE_INTERVAL);
 };
+function getUserLocation() {
+    if (navigator.geolocation) {
+        // 位置情報取得をリクエスト
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                console.log("位置情報取得成功:", userLocation);
+                calculateDistances(userLocation); // 距離計算を実行
+            },
+            (error) => {
+                const errorMessages = {
+                    1: "位置情報の利用が許可されていません。",
+                    2: "位置情報を取得できません。",
+                    3: "位置情報の取得がタイムアウトしました。"
+                };
+                console.error("位置情報取得エラー:", error.message);
+                alert(errorMessages[error.code] || "未知のエラーが発生しました。");
+            },
+            {
+                enableHighAccuracy: true, // 高精度な位置情報を取得
+                maximumAge: 0, // キャッシュを無効にする
+                            }
+        );
+    } else {
+        alert("このブラウザは位置情報の取得をサポートしていません。");
+    }
+}
 
 // 位置情報を手動で更新するためのボタン機能
 function setupManualRefresh() {
@@ -198,39 +226,6 @@ function callRequest(phoneNumber) {
 function formatTextWithLineBreaks(text) {
     return text.replace(/\n/g, "<br>"); // 改行を <br> タグに変換
 }
-
-function getUserLocation() {
-    if (navigator.geolocation) {
-        // 位置情報取得をリクエスト
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                console.log("位置情報取得成功:", userLocation);
-                calculateDistances(userLocation); // 距離計算を実行
-            },
-            (error) => {
-                const errorMessages = {
-                    1: "位置情報の利用が許可されていません。",
-                    2: "位置情報を取得できません。",
-                    3: "位置情報の取得がタイムアウトしました。"
-                };
-                console.error("位置情報取得エラー:", error.message);
-                alert(errorMessages[error.code] || "未知のエラーが発生しました。");
-            },
-            {
-                enableHighAccuracy: true, // 高精度な位置情報を取得
-                maximumAge: 0, // キャッシュを無効にする
-                timeout: 10000 // タイムアウト設定（10秒）
-            }
-        );
-    } else {
-        alert("このブラウザは位置情報の取得をサポートしていません。");
-    }
-}
-
 
 // 依頼確認の2段階認証
 function confirmRequest(companyName) {
