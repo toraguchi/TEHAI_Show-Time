@@ -1,0 +1,6 @@
+/index.html
+/styles.css
+/Script.js
+git add .
+git commit -m "Add initial project files for GitHub Pages"
+git push origin main
