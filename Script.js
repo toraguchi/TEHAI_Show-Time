@@ -159,6 +159,10 @@ function calculateDistances(userLocation) {
 
 function displayCompanies(userLocation) {
     const container = document.getElementById("company-list");
+    if (!container) {
+        console.error("企業リストのコンテナが見つかりません。HTML構造を確認してください。");
+        return;
+    }
     container.innerHTML = ""; // 初期化
 
     companies.forEach((company) => {
@@ -195,6 +199,37 @@ function formatTextWithLineBreaks(text) {
     return text.replace(/\n/g, "<br>"); // 改行を <br> タグに変換
 }
 
+function getUserLocation() {
+    if (navigator.geolocation) {
+        // 位置情報取得をリクエスト
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                console.log("位置情報取得成功:", userLocation);
+                calculateDistances(userLocation); // 距離計算を実行
+            },
+            (error) => {
+                const errorMessages = {
+                    1: "位置情報の利用が許可されていません。",
+                    2: "位置情報を取得できません。",
+                    3: "位置情報の取得がタイムアウトしました。"
+                };
+                console.error("位置情報取得エラー:", error.message);
+                alert(errorMessages[error.code] || "未知のエラーが発生しました。");
+            },
+            {
+                enableHighAccuracy: true, // 高精度な位置情報を取得
+                maximumAge: 0, // キャッシュを無効にする
+                timeout: 10000 // タイムアウト設定（10秒）
+            }
+        );
+    } else {
+        alert("このブラウザは位置情報の取得をサポートしていません。");
+    }
+}
 
 
 // 依頼確認の2段階認証
@@ -203,14 +238,6 @@ function confirmRequest(companyName) {
     if (confirmation) {
         sendRequest(companyName); // 確認後にメール送信
     }
-}
-
-// メール送信
-function sendRequest(companyName) {
-    const subject = encodeURIComponent("依頼内容");
-    const body = encodeURIComponent(`依頼企業: ${companyName}\nサイトURL: ${window.location.href}`);
-    const mailtoLink = `mailto:info@2019showtime.com?subject=${subject}&body=${body}`;
-    window.location.href = mailtoLink;
 }
 
 // Google Mapを初期化して企業の位置にマーカーを追加
