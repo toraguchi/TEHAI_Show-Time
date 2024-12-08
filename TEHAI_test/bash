@@ -1,7 +1,10 @@
-mv path/to/current/folder/* .
-/index.html
-/styles.css
-/Script.js
-git add .
-git commit -m "Fix file structure for GitHub Pages"
-git push origin main
+/project-root/
+├── folder/
+│   └── index.html
+├── styles/
+│   └── styles.css
+└── script/
+    └── Script.js
+mv folder/index.html .  # 第一階層へ移動
+mv styles/styles.css .  # CSSファイルを移動
+mv script/Script.js .   # JSファイルを移動
