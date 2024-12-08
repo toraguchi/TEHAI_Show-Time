@@ -74,7 +74,10 @@ function callRequest(companyName) {
     window.location.href = telLink; // 電話をかける
 }
 
-// 初期化
+// 定期的に位置情報を更新する間隔 (例えば60秒ごと)
+const LOCATION_UPDATE_INTERVAL = 60000; // 60秒
+
+// 初期化 - ページ読み込み時に位置情報を自動で取得し、定期的に更新
 window.onload = () => {
     getUserLocation(); // 初回の位置情報取得
     // 定期的に位置情報を更新
@@ -82,6 +85,8 @@ window.onload = () => {
         getUserLocation();
     }, LOCATION_UPDATE_INTERVAL);
 };
+
+// 位置情報を取得して表示する関数
 function getUserLocation() {
     if (navigator.geolocation) {
         // 位置情報取得をリクエスト
@@ -92,7 +97,7 @@ function getUserLocation() {
                     lng: position.coords.longitude
                 };
                 console.log("位置情報取得成功:", userLocation);
-                calculateDistances(userLocation); // 距離計算を実行
+                calculateDistances(userLocation); // 位置情報取得後に距離計算
             },
             (error) => {
                 const errorMessages = {
@@ -105,51 +110,11 @@ function getUserLocation() {
             },
             {
                 enableHighAccuracy: true, // 高精度な位置情報を取得
-                maximumAge: 0, // キャッシュを無効にする
-                            }
-        );
-    } else {
-        alert("このブラウザは位置情報の取得をサポートしていません。");
-    }
-}
-
-// 位置情報を手動で更新するためのボタン機能
-function setupManualRefresh() {
-    const refreshButton = document.getElementById('refresh-location');
-    if (refreshButton) {
-        refreshButton.addEventListener('click', () => {
-            getUserLocation();
-        });
-    }
-}
-
-// ページロード時に位置情報を取得
-window.onload = () => {
-    getUserLocation(); // 初回の位置情報取得
-};
-
-// 位置情報を取得して表示
-function getUserLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                calculateDistances(userLocation); // 位置情報取得後に距離計算
-            },
-            (error) => {
-                console.error("位置情報の取得に失敗しました:", error);
-                alert("位置情報を許可してください。");
-            },
-            {
-                enableHighAccuracy: true, // 高精度モードを有効化
-                maximumAge: 0 // キャッシュを使用しない
+                maximumAge: 0 // キャッシュを無効にする
             }
         );
     } else {
-        alert("ブラウザが位置情報をサポートしていません。");
+        alert("このブラウザは位置情報の取得をサポートしていません。");
     }
 }
 
