@@ -1,3 +1,4 @@
+mv path/to/current/folder/* .
 /index.html
 /styles.css
 /Script.js
