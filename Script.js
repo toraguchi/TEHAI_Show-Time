@@ -8,7 +8,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";
 const companies = [
     { 
         name: "丸松産業", 
-        phone:"+0889127915",
+        phone:"08089127915",
         hours: "8:30〜16:30\n※全日・11:30〜13:00 持ち込み不可", 
         rate: "混廃 ¥65〜/kg\n木くず ¥30〜/kg", 
         address: "埼玉県新座市大和田2-231-1", 
@@ -17,7 +17,7 @@ const companies = [
     },
     { 
         name: "オネスト", 
-        phone:"+0889127915",
+        phone:"09072223462",
         hours: "日曜日以外／7：00～18：00\n日曜日・祝／10：00～17：00\n※日曜日予約制 前日15:00予約\n※全日・12:30〜13:00 持ち込み不可", 
         rate: "混廃 ¥65〜/kg\n木くず ¥35/kg", 
         address: "東京都江東区新木場4-3-26", 
@@ -115,11 +115,11 @@ function displayCompanies(userLocation) {
         card.className = "feature-item";
         card.innerHTML = `
             <h4>${company.name}</h4>
-            <p><img src="path/to/open-time-icon.png" style="width: 20px; vertical-align: middle;"> 営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
-            <p><img src="path/to/rate-icon.png" style="width: 20px; vertical-align: middle;"> 処分単価: ${formatTextWithLineBreaks(company.rate)}</p>
-            <p><img src="path/to/address-icon.png" style="width: 20px; vertical-align: middle;"> 住所: ${company.address}</p>
-            <p><img src="path/to/holiday-icon.png" style="width: 20px; vertical-align: middle;"> 休日: ${company.holiday}</p>
-            <p><img src="path/to/duration-icon.png" style="width: 20px; vertical-align: middle;"> 移動時間: ${company.duration || "計算中..."}</p>
+            <p>⚪︎営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
+            <p>⚪︎処分単価: ${formatTextWithLineBreaks(company.rate)}</p>
+            <p>⚪︎住所: ${company.address}</p>
+            <p>⚪︎休日: ${company.holiday}</p>
+            <p>⚪︎移動時間: ${company.duration || "計算中..."}</p>
             <div id="map-${company.name}" style="width: 100%; height: 300px;"></div>
             <button onclick="callRequest('${company.phone}')">tel依頼</button> <!-- 電話ボタン -->
             <button onclick="openRoute('${company.name}', ${userLocation.lat}, ${userLocation.lng})">経路案内</button>
