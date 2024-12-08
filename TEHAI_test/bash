@@ -2,3 +2,6 @@ mv path/to/current/folder/* .
 /index.html
 /styles.css
 /Script.js
+git add .
+git commit -m "Fix file structure for GitHub Pages"
+git push origin main
