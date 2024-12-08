@@ -190,6 +190,21 @@ body {
 .company-item .info-overlay p {
     font-size: 1em;
 }
+#refresh-location {
+   margin-bottom: 20px;
+   background-color: #004aad;
+   color: white;
+   border: none;
+   padding: 10px 20px;
+   font-size: 16px;
+   border-radius: 5px;
+   cursor: pointer;
+}
+
+#refresh-location:hover {
+   background-color: #002f6c;
+}
+
 /* セクションスタイル */
 #companies {
     padding: 20px 0;

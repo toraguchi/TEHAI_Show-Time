@@ -73,55 +73,89 @@ function callRequest(companyName) {
     const telLink = `tel:${company.phone}`;
     window.location.href = telLink; // 電話をかける
 }
+// 定期的に位置情報を更新するためのインターバル
+const LOCATION_UPDATE_INTERVAL = 60000; // 60秒ごとに更新
+
+// 初期化
+window.onload = () => {
+    getUserLocation(); // 初回の位置情報取得
+    // 定期的に位置情報を更新
+    setInterval(() => {
+        getUserLocation();
+    }, LOCATION_UPDATE_INTERVAL);
+};
+
+// 位置情報を手動で更新するためのボタン機能
+function setupManualRefresh() {
+    const refreshButton = document.getElementById('refresh-location');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', () => {
+            getUserLocation();
+        });
+    }
+}
+
+// ページロード時に位置情報を取得
+window.onload = () => {
+    getUserLocation(); // 初回の位置情報取得
+};
 
 // 位置情報を取得して表示
 function getUserLocation() {
     if (navigator.geolocation) {
-        if (!hasLocationPermission) {  // 一度だけ位置情報を取得
-            navigator.geolocation.getCurrentPosition((position) => {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
                 const userLocation = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                hasLocationPermission = true; // 一度位置情報が取得できたらフラグを立てる
                 calculateDistances(userLocation); // 位置情報取得後に距離計算
-            }, (error) => {
+            },
+            (error) => {
                 console.error("位置情報の取得に失敗しました:", error);
                 alert("位置情報を許可してください。");
-            });
-        }
+            },
+            {
+                enableHighAccuracy: true, // 高精度モードを有効化
+                maximumAge: 0 // キャッシュを使用しない
+            }
+        );
     } else {
         alert("ブラウザが位置情報をサポートしていません。");
     }
 }
 
-// 距離を計算して企業を並べ替え
+// 距離計算と企業リスト更新
 function calculateDistances(userLocation) {
     const service = new google.maps.DistanceMatrixService();
     const destinations = companies.map(company => company.location);
 
-    service.getDistanceMatrix({
-        origins: [userLocation],
-        destinations: destinations,
-        travelMode: google.maps.TravelMode.DRIVING
-    }, (response, status) => {
-        if (status === google.maps.DistanceMatrixStatus.OK) {
-            const results = response.rows[0].elements;
-            companies.forEach((company, index) => {
-                company.distance = results[index].distance.value; // 距離（メートル）
-                company.duration = results[index].duration.text; // 移動時間（テキスト）
-            });
+    service.getDistanceMatrix(
+        {
+            origins: [userLocation],
+            destinations: destinations,
+            travelMode: google.maps.TravelMode.DRIVING
+        },
+        (response, status) => {
+            if (status === google.maps.DistanceMatrixStatus.OK) {
+                const results = response.rows[0].elements;
+                companies.forEach((company, index) => {
+                    company.distance = results[index].distance.value; // 距離（メートル）
+                    company.duration = results[index].duration.text; // 移動時間（テキスト）
+                });
 
-            // 距離順に並べ替え
-            companies.sort((a, b) => a.distance - b.distance);
+                // 距離順に並べ替え
+                companies.sort((a, b) => a.distance - b.distance);
 
-            // すべての企業を表示
-            displayCompanies(userLocation);
-        } else {
-            console.error("Distance Matrix APIのエラー:", status);
+                // 最新の企業情報を表示
+                displayCompanies(userLocation);
+            } else {
+                console.error("Distance Matrix APIのエラー:", status);
+            }
         }
-    });
+    );
 }
+
 
 function displayCompanies(userLocation) {
     const container = document.getElementById("company-list");
