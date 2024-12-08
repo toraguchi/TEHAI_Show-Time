@@ -143,11 +143,27 @@ function calculateDistances(userLocation) {
                 // 最新の企業情報を表示
                 displayCompanies(userLocation);
             } else {
+                // エラー詳細のログを表示
                 console.error("Distance Matrix APIのエラー:", status);
+                alert(`エラーが発生しました: ${status}. 詳細はコンソールで確認してください。`);
+
+                // コンソールに追加情報を表示
+                if (status === google.maps.DistanceMatrixStatus.INVALID_REQUEST) {
+                    console.error("リクエストが無効です。URLのパラメータやリファラ設定を確認してください。");
+                } else if (status === google.maps.DistanceMatrixStatus.MAX_ELEMENTS_EXCEEDED) {
+                    console.error("最大の要素数を超えました。リクエストが多すぎます。");
+                } else if (status === google.maps.DistanceMatrixStatus.OVER_QUERY_LIMIT) {
+                    console.error("クエリ制限を超えました。APIのリクエスト制限を確認してください。");
+                } else if (status === google.maps.DistanceMatrixStatus.REQUEST_DENIED) {
+                    console.error("リクエストが拒否されました。APIキーやリファラ設定を確認してください。");
+                } else if (status === google.maps.DistanceMatrixStatus.UNKNOWN_ERROR) {
+                    console.error("不明なエラーが発生しました。");
+                }
             }
         }
     );
 }
+
 
 
 function displayCompanies(userLocation) {
