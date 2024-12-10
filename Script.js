@@ -73,10 +73,6 @@ function callRequest(companyName) {
     const telLink = `tel:${company.phone}`;
     window.location.href = telLink; // 電話をかける
 }
-
-// 定期的に位置情報を更新する間隔 (例えば60秒ごと)
-const LOCATION_UPDATE_INTERVAL = 60000; // 60秒
-
 // 初期化 - ページ読み込み時に位置情報を自動で取得し、定期的に更新
 window.onload = () => {
     getUserLocation(); // 初回の位置情報取得
@@ -197,6 +193,12 @@ function displayCompanies(userLocation) {
         initMap(mapElement, company.location);
     });
 }
+// エラーハンドリング
+const errorMessages = {
+    1: "位置情報の利用が許可されていません。",
+    2: "位置情報を取得できません。",
+    3: "位置情報の取得がタイムアウトしました。"
+};
 
 // 電話依頼の処理
 function callRequest(phoneNumber) {
