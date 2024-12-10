@@ -73,13 +73,10 @@ function callRequest(companyName) {
     const telLink = `tel:${company.phone}`;
     window.location.href = telLink; // 電話をかける
 }
-// 初期化 - ページ読み込み時に位置情報を自動で取得し、定期的に更新
+// 位置情報取得通知をリロードごとに表示
 window.onload = () => {
-    getUserLocation(); // 初回の位置情報取得
-    // 定期的に位置情報を更新
-    setInterval(() => {
-        getUserLocation();
-    }, LOCATION_UPDATE_INTERVAL);
+    // ページが読み込まれるたびに位置情報を取得
+    requestLocationPermission();
 };
 
 // 位置情報を取得して表示する関数
