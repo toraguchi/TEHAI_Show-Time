@@ -25,7 +25,7 @@ const companies = [
         address: "東京都江東区新木場4-3-26",
         holiday: "第二日曜日",
         memo:"日曜日事前予約制 「前日15:00までに予約必須」",
-        location:{ lat: 35.6667, lng: 139.7986 }
+        location:{ lat: 35.643889, lng: 139.825833 }
         
     },
     { 
