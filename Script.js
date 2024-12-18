@@ -14,6 +14,7 @@ const companies = [
         address: "埼玉県新座市大和田2-231-1",
         holiday: "土日祝(第二土曜日除く)",
         memo:"11:30〜13:00 持ち込み不可",
+        contract:"",
         location:{ lat: 35.8054, lng: 139.5425 }
         
     },
@@ -25,6 +26,7 @@ const companies = [
         address: "東京都江東区新木場4-3-26",
         holiday: "第二日曜日",
         memo:"日曜日事前予約制 「前日15:00までに予約必須」",
+        contract:"",
         location:{ lat: 35.643889, lng: 139.825833 }
         
     },
@@ -36,6 +38,7 @@ const companies = [
         address: "神奈川県相模原市中央区宮下本町3-28-14",
         holiday: "土日祝",
         memo:"全日事前予約制 「持込2日前に予約必須」",
+        contract:"",
         location:{ lat: 35.5702, lng: 139.3607 }
     },
     { 
@@ -46,6 +49,7 @@ const companies = [
         address: "東京都大田区京浜島2-20-4",
         holiday: "年末年始",
         memo:"ー",
+        contract:"",
         location:{ lat: 35.5843, lng: 139.7394 }
         
     },
@@ -57,6 +61,7 @@ const companies = [
         address: "東京都墨田区東墨田2-24-19",
         holiday: "土日祝",
         memo:"ー",
+        contract:"",
         location:{ lat: 35.7229, lng: 139.8338 }
         
     }
@@ -179,6 +184,7 @@ function displayCompanies(userLocation) {
             <p>⚪︎休業日: ${company.holiday}</p>
             <p>⚪︎備考: ${company.memo}</p>            
             <p>⚪︎移動時間: ${company.duration || "計算中..."}</p>
+            <p>⚪︎契約書: ${company.contract}</p>            
             <div id="map-${company.name}" style="width: 100%; height: 300px;"></div>
             <button onclick="callRequest('${company.phone}')">tel依頼</button> <!-- 電話ボタン -->
             <button onclick="openRoute('${company.name}', ${userLocation.lat}, ${userLocation.lng})">経路案内</button>
