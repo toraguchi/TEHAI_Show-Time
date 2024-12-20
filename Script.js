@@ -77,6 +77,30 @@ function callRequest(companyName) {
     // 電話番号にかけるためのリンクを作成
     const telLink = `tel:${company.phone}`;
     window.location.href = telLink; // 電話をかける
+
+    function logCallAction(companyName, phoneNumber) {
+        const logEntry = {
+            companyName: companyName,
+            phoneNumber: phoneNumber,
+            timestamp: new Date().toISOString(),
+        };
+    
+        // 既存のログデータを取得
+        const existingLogs = JSON.parse(localStorage.getItem('callLogs')) || [];
+        existingLogs.push(logEntry);
+    
+        // ローカルストレージに保存
+        localStorage.setItem('callLogs', JSON.stringify(existingLogs));
+    
+        console.log('ログ記録:', logEntry);
+    }
+    function callRequest(companyName, phoneNumber) {
+        logCallAction(companyName, phoneNumber); // ローカルストレージに記録
+        logCallActionToServer(companyName, phoneNumber); // サーバーに記録（必要に応じて）
+        
+        window.location.href = `tel:${phoneNumber}`;
+    }
+    
 }
 // 位置情報取得通知をリロードごとに表示
 window.onload = () => {
