@@ -202,13 +202,13 @@ function displayCompanies(userLocation) {
         card.className = "feature-item";
         card.innerHTML = `
             <h4>${company.name}</h4>
-             <img src="images/営業時間.jpg" alt="営業時間"><p>営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
-            <img src="料金単価.jpg" alt="処分単価"><p>⚪︎処分単価: ${formatTextWithLineBreaks(company.rate)}</p>
-            <img src="住所.jpg" alt="住所"><p>⚪︎住所: ${company.address}</p>
-            <img src="休業日.jpg" alt="休業日"><p>⚪︎休業日: ${company.holiday}</p>
-            <img src="備考.jpg" alt="備考"><p>⚪︎備考: ${company.memo}</p>            
-            <img src="移動時間.jpg" alt="移動時間"><p>⚪︎移動時間: ${company.duration || "計算中..."}</p>
-            <img src="契約.jpg" alt="契約"><p>⚪︎契約書: ${company.contract}</p>            
+            <p>営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
+            <p>⚪︎処分単価: ${formatTextWithLineBreaks(company.rate)}</p>
+            <p>⚪︎住所: ${company.address}</p>
+            <p>⚪︎休業日: ${company.holiday}</p>
+            <p>⚪︎備考: ${company.memo}</p>            
+            <p>⚪︎移動時間: ${company.duration || "計算中..."}</p>
+            <p>⚪︎契約書: ${company.contract}</p>            
             <div id="map-${company.name}" style="width: 100%; height: 300px;"></div>
             <button onclick="callRequest('${company.phone}')">tel依頼</button> <!-- 電話ボタン -->
             <button onclick="openRoute('${company.name}', ${userLocation.lat}, ${userLocation.lng})">経路案内</button>
