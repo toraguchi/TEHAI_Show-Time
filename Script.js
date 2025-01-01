@@ -66,28 +66,18 @@ const companies = [
         
     }
 ];
+// 電話をかける
 function callRequest(companyName) {
     const company = companies.find(c => c.name === companyName);
     if (!company || !company.phone) {
-        alert("電話番号が見つかりません。");
+        alert("会社情報または電話番号が見つかりません");
         return;
     }
 
-    // ログ記録
-    const logEntry = {
-        companyName: company.name,
-        phoneNumber: company.phone,
-        timestamp: new Date().toISOString(),
-    };
-
-    const existingLogs = JSON.parse(localStorage.getItem("callLogs")) || [];
-    existingLogs.push(logEntry);
-    localStorage.setItem("callLogs", JSON.stringify(existingLogs));
-
-    // 電話リンクを実行
-    window.location.href = `tel:${company.phone}`;
+    // 電話番号にかけるためのリンクを作成
+    const telLink = `tel:${company.phone}`;
+    window.location.href = telLink; // 電話をかける
 }
-
 // 位置情報取得通知をリロードごとに表示
 window.onload = () => {
     // ページが読み込まれるたびに位置情報を取得
@@ -213,6 +203,10 @@ const errorMessages = {
     3: "位置情報の取得がタイムアウトしました。"
 };
 
+// 電話依頼の処理
+function callRequest(phoneNumber) {
+    window.location.href = `tel:${phoneNumber}`;
+}
 
 // 改行をHTMLの <br> タグに変換
 function formatTextWithLineBreaks(text) {
