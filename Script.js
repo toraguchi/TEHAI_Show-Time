@@ -202,7 +202,7 @@ function displayCompanies(userLocation) {
         card.className = "feature-item";
         card.innerHTML = `
             <h4>${company.name}</h4>
-             <img src="/Users/t-daichi/Documents/Webアプリ/TEHAI_rowdate/営業時間.jpg" alt="営業時間"><p>営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
+             <img src="/Users/t-daichi/Documents/Webアプリ/TEHAI_rowdate/images/移動時間.jpg" alt="営業時間"><p>営業時間: ${formatTextWithLineBreaks(company.hours)}</p>
             <img src="/Users/t-daichi/Documents/Webアプリ/TEHAI_rowdate/料金単価.jpg" alt="処分単価"><p>⚪︎処分単価: ${formatTextWithLineBreaks(company.rate)}</p>
             <img src="/Users/t-daichi/Documents/Webアプリ/TEHAI_rowdate/住所.jpg" alt="住所"><p>⚪︎住所: ${company.address}</p>
             <img src="/Users/t-daichi/Documents/Webアプリ/TEHAI_rowdate/休業日.jpg" alt="休業日"><p>⚪︎休業日: ${company.holiday}</p>
