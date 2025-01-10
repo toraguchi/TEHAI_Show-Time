@@ -16,10 +16,9 @@ const companies = [
         memo:"11:30〜13:00 持ち込み不可",
         contract:"",
         personnel:"与儀 様",
-        location:{ lat: 35.805454, lng: 139.548950 }
-        
-    },
-    { 
+        location:{ lat:35.808179558872375, lng: 139.54994368553108 }
+        },
+         {
         name: "オネスト",
         phone:"0335225300",
         hours: "平日／7：00～18：00\n日曜日・祝／10：00～17：00",
@@ -29,9 +28,9 @@ const companies = [
         memo:"日曜日事前予約制 「前日15:00までに予約必須」",
         contract:"",
         personnel:"小林 様",
-        location:{ lat: 35.645157, lng: 139.838470 }
-    },
-    { 
+        location:{ lat:35.645324883816585, lng: 139.83876319650597 }
+        },
+         {
         name: "東港金属",
         phone:"0337901751",
         hours:"全日 00:00〜23:59（24時間営業）",
@@ -41,22 +40,21 @@ const companies = [
         memo:"ー",
         contract:"",
         personnel:"森 様",
-        location:{ lat: 35.567535, lng: 139.766463 }
-    },
-    { 
+        location:{ lat: 35.56727553499662, lng: 139.7666577830091 }
+        },
+         {
         name: "旭商会",
         phone:"0427713558",
         hours:"8:30〜16:30\n※全日・12:00〜13:00 持ち込み不可",
         rate: "混廃 ¥40〜/kg\n木くず ¥30/kg",
-        address: "神奈川県相模原市中央区宮下本町3-28-14",
+        address: "神奈川県相模原市緑区下九沢2096-1",
         holiday: "土日祝",
         memo:"全日事前予約制 「持込2日前に予約必須」",
         contract:"",
         personnel:"石澤 様",
-        location:{ lat: 35.597061, lng: 139.363419 }
-        
-    },
-    { 
+        location:{ lat: 35.589123760212026, lng: 139.33580377287038 }
+        },
+         {
         name: "亀田",
         phone:"0336186023",
         hours:"8:30〜15:00\n※全日・12:00〜13:00 持ち込み不可",
@@ -66,10 +64,9 @@ const companies = [
         memo:"ー",
         contract:"",
         personnel:"高橋 様",
-        location:{ lat: 35.722729, lng: 139.833832 }
-        
-    },
-    { 
+        location:{ lat: 35.72374042038803, lng: 139.8337693110415 }
+        },
+         {
         name: "アール・イー・ハヤシ",
         phone:"0334723054",
         hours:"8:30〜16:30\n※全日・12:00〜13:00 持ち込み不可",
@@ -79,9 +76,8 @@ const companies = [
         memo:"ー",
         contract:"",
         personnel:"沼下 様",
-        location:{ lat: 35.560459, lng: 139.742142 }
-        
-    }
+        location:{ lat: 35.560442159460635, lng: 139.74225118300902 }
+        }
 ];
 // 電話をかける
 function callRequest(companyName) {
