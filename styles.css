@@ -274,3 +274,54 @@ feature-item img {
 vertical-align: middle;
     margin-right: 10px;
 }
+/* CRM管理ページのスタイル統一 */
+.crm-container {
+   max-width: 900px;
+   margin: auto;
+   padding: 20px;
+   background: white;
+   border-radius: 8px;
+   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+   text-align: center; /* 中央寄せ */
+}
+
+.crm-container h2 {
+   font-size: 2em;
+   color: #004aad;
+   margin-bottom: 20px;
+}
+
+/* フォームのデザイン */
+#crm-form {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   padding: 20px;
+   border: 1px solid #ddd;
+   border-radius: 5px;
+}
+
+#crm-form label {
+   font-weight: bold;
+   text-align: left;
+}
+
+#crm-form input, #crm-form select {
+   width: 100%;
+   padding: 8px;
+   border: 1px solid #ccc;
+   border-radius: 5px;
+}
+
+button {
+   background-color: #004aad;
+   color: white;
+   padding: 10px;
+   border: none;
+   border-radius: 5px;
+   cursor: pointer;
+}
+
+button:hover {
+   background-color: #002f6c;
+}

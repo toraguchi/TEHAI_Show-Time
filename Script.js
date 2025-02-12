@@ -311,6 +311,152 @@ function openRoute(companyName, userLat, userLng) {
     // 新しいタブでGoogleマップを開く
     window.open(googleMapsURL, '_blank');
 }
+document.addEventListener("DOMContentLoaded", function () {
+    const caseList = document.getElementById("case-list");
+    const processingCompanySelect = document.getElementById("processing-company");
+    const saveCaseButton = document.getElementById("save-case");
+    const formContainer = document.getElementById("crm-form");
+    let editingIndex = null; // 編集モードかどうかを判定
+
+    if (!processingCompanySelect) return; // 案件管理ページでない場合はスクリプトを実行しない
+
+    // **案件作成ボタンの処理**
+    document.getElementById("create-case").addEventListener("click", function () {
+        formContainer.classList.remove("hidden");
+        editingIndex = null; // 新規作成モードにする
+        resetForm();
+    });
+
+    document.getElementById("create-case-location").addEventListener("click", function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                document.getElementById("address").dataset.lat = userLocation.lat;
+                document.getElementById("address").dataset.lng = userLocation.lng;
+                populateCompanies(userLocation);
+            });
+        }
+        formContainer.classList.remove("hidden");
+        editingIndex = null;
+        resetForm();
+    });
+
+    // **企業リストの取得**
+    function populateCompanies(userLocation) {
+        processingCompanySelect.innerHTML = companies.map(c => {
+            const time = getTravelTime(userLocation, c.location);
+            return `<option value="${c.name}" data-time="${time}">${c.name} (移動時間: ${time} 分)</option>`;
+        }).join('');
+
+        // **デフォルトで一番近い企業を選択**
+        processingCompanySelect.value = companies[0].name;
+        updateTravelTime(userLocation, companies[0].name);
+    }
+
+    // **移動時間の更新**
+    function updateTravelTime(userLocation, companyName) {
+        const selectedCompany = companies.find(c => c.name === companyName);
+        if (selectedCompany) {
+            const time = getTravelTime(userLocation, selectedCompany.location);
+            document.getElementById("travel-time").value = time;
+        }
+    }
+
+    // **保存処理**
+    saveCaseButton.addEventListener("click", function () {
+        const customerName = document.getElementById("customer-name").value.trim();
+        const phoneNumber = document.getElementById("phone-number").value.trim();
+        const address = document.getElementById("address").value.trim();
+        const estimateDate = document.getElementById("estimate-date").value;
+        const workDate = document.getElementById("work-date").value;
+        const price = document.getElementById("price").value.trim();
+        const status = document.getElementById("status").value;
+        const processingCompany = processingCompanySelect.value;
+        const travelTime = document.getElementById("travel-time").value;
+
+        // **中間処理企業は必須**
+        if (!processingCompany) {
+            alert("中間処理企業を選択してください。");
+            return;
+        }
+
+        let cases = JSON.parse(localStorage.getItem("cases")) || [];
+
+        if (editingIndex !== null) {
+            // **編集モード**
+            cases[editingIndex] = { customerName, phoneNumber, address, estimateDate, workDate, price, status, processingCompany, travelTime };
+        } else {
+            // **新規作成モード**
+            cases.push({ customerName, phoneNumber, address, estimateDate, workDate, price, status, processingCompany, travelTime });
+        }
+
+        localStorage.setItem("cases", JSON.stringify(cases));
+        displaySavedCases();
+
+        // **フォームを非表示**
+        formContainer.classList.add("hidden");
+        editingIndex = null;
+        resetForm();
+    });
+
+    // **案件の表示**
+    function displaySavedCases() {
+        caseList.innerHTML = "";
+        const cases = JSON.parse(localStorage.getItem("cases")) || [];
+        cases.forEach((caseData, index) => {
+            const caseItem = document.createElement("div");
+            caseItem.classList.add("case-item");
+            caseItem.innerHTML = `<p><strong>${caseData.customerName}</strong> - ${caseData.phoneNumber}</p>
+                                  <p>住所: ${caseData.address}</p>
+                                  <p>見積もり日: ${caseData.estimateDate}</p>
+                                  <p>作業日: ${caseData.workDate}</p>
+                                  <p>代金: ¥${caseData.price}</p>
+                                  <p>ステータス: ${caseData.status}</p>
+                                  <p>中間処理企業: ${caseData.processingCompany}</p>
+                                  <p>移動時間: ${caseData.travelTime} 分</p>
+                                  <button class="edit-case" data-index="${index}">編集</button>
+                                  <button class="delete-case" data-index="${index}">削除</button>`;
+
+            caseList.appendChild(caseItem);
+
+            // **削除ボタンの処理**
+            caseItem.querySelector(".delete-case").addEventListener("click", function () {
+                if (!confirm("本当に削除しますか？")) return;
+                let cases = JSON.parse(localStorage.getItem("cases")) || [];
+                cases.splice(index, 1);
+                localStorage.setItem("cases", JSON.stringify(cases));
+                displaySavedCases();
+            });
+
+            // **編集ボタンの処理**
+            caseItem.querySelector(".edit-case").addEventListener("click", function () {
+                const caseToEdit = cases[index];
+                document.getElementById("customer-name").value = caseToEdit.customerName;
+                document.getElementById("phone-number").value = caseToEdit.phoneNumber;
+                document.getElementById("address").value = caseToEdit.address;
+                document.getElementById("estimate-date").value = caseToEdit.estimateDate;
+                document.getElementById("work-date").value = caseToEdit.workDate;
+                document.getElementById("price").value = caseToEdit.price;
+                document.getElementById("status").value = caseToEdit.status;
+                processingCompanySelect.value = caseToEdit.processingCompany;
+                document.getElementById("travel-time").value = caseToEdit.travelTime;
+
+                // **フォームを表示**
+                formContainer.classList.remove("hidden");
+                editingIndex = index;
+            });
+        });
+    }
+
+    // **フォームのリセット**
+    function resetForm() {
+        document.getElementById("crm-form").reset();
+        document.getElementById("travel-time").value = "";
+    }
+
+    displaySavedCases();
+});
+
 
 
 
