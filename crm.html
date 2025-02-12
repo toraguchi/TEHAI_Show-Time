@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <header>
+        <div class="container">
+        </div>
+    </header>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件管理 - TEHAI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">TEHAI 案件管理</h1>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html">ホーム</a></li>
+                    <li><a href="crm.html">案件管理</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="crm-container">
+        <h2>案件管理</h2>
+        <button id="create-case">案件作成</button>
+        <button id="create-case-location">現在地で作成</button>
+
+        <div id="crm-form" class="hidden">
+            <label>お客様名: <input type="text" id="customer-name" required></label>
+            <label>電話番号: <input type="text" id="phone-number" required></label>
+            <label>住所: <input type="text" id="address" required></label>
+            <label>見積もり日: <input type="date" id="estimate-date" required></label>
+            <label>作業日: <input type="date" id="work-date" required></label>
+            <label>代金（税込）: <input type="number" id="price" required></label>
+            <label>ステータス: 
+                <select id="status">
+                    <option value="成約">成約</option>
+                    <option value="不成約">不成約</option>
+                    <option value="検討中">検討中</option>
+                </select>
+            </label>
+            <label>中間処理企業: 
+                <select id="processing-company" required></select>
+            </label>
+            <label>移動時間: <input type="text" id="travel-time" disabled></label>
+            <button id="save-case">保存</button>
+        </div>
+
+        <h3>案件一覧</h3>
+        <div id="case-list"></div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
