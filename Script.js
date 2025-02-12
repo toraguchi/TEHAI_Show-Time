@@ -324,79 +324,22 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!processingCompanySelect) return;
 
     // **Google Maps APIのキー**
-    const googleMapsApiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw"; // ここにGoogle Maps APIキーを記入
+    const googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // ここにGoogle Maps APIキーを記入
 
-    // **Google Maps Directions APIを使って移動時間を取得**
-    function getTravelTimeFromGoogleMaps(userLocation, companyLocation) {
-        const service = new google.maps.DirectionsService();
-        const request = {
-            origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
-            destination: new google.maps.LatLng(companyLocation.lat, companyLocation.lng),
-            travelMode: google.maps.TravelMode.DRIVING
-        };
-
+    // **Google Maps Geocoderを使って住所から緯度経度を取得**
+    function getCoordinatesFromAddress(address) {
+        const geocoder = new google.maps.Geocoder();
         return new Promise((resolve, reject) => {
-            service.route(request, function (result, status) {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    // 移動時間を分単位で取得
-                    const duration = result.routes[0].legs[0].duration.value / 60;
-                    resolve(Math.round(duration));
+            geocoder.geocode({ 'address': address }, function (results, status) {
+                if (status === 'OK' && results[0]) {
+                    const location = results[0].geometry.location;
+                    resolve({ lat: location.lat(), lng: location.lng() });
                 } else {
-                    reject("移動時間の取得に失敗しました");
+                    reject("住所から緯度経度を取得できませんでした");
                 }
             });
         });
     }
-
-    // **現在地で作成ボタンを押した時の処理**
-    document.getElementById("create-case-location").addEventListener("click", function () {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    document.getElementById("address").dataset.lat = userLocation.lat;
-                    document.getElementById("address").dataset.lng = userLocation.lng;
-
-                    // **Google Maps APIを使って住所と郵便番号を取得**
-                    const geocoder = new google.maps.Geocoder();
-                    const latLng = new google.maps.LatLng(userLocation.lat, userLocation.lng);
-                    geocoder.geocode({ 'location': latLng }, function (results, status) {
-                        if (status === 'OK' && results[0]) {
-                            let address = results[0].formatted_address;
-                            let postalCode = '';
-
-                            // 住所と郵便番号を分ける
-                            results[0].address_components.forEach(function (component) {
-                                if (component.types.includes("postal_code")) {
-                                    postalCode = component.long_name;
-                                }
-                            });
-
-                            // フォームに反映
-                            addressInput.value = address;
-                            postalCodeInput.value = postalCode;
-
-                            // **概算の移動時間順に中間処理企業を並べる**
-                            const approximateLocation = getApproximateLocation(postalCode);
-                            populateCompaniesByDistance(userLocation, approximateLocation);
-                        } else {
-                            console.error("住所の取得に失敗しました");
-                            alert("現在地の住所を取得できませんでした。");
-                        }
-                    });
-                },
-                function (error) {
-                    console.error("位置情報の取得に失敗しました:", error);
-                    alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
-                }
-            );
-        } else {
-            alert("このブラウザは位置情報をサポートしていません。");
-        }
-        formContainer.classList.remove("hidden");
-        editingIndex = null;
-        resetForm();
-    });
 
     // **郵便番号から住所を取得**
     postalCodeInput.addEventListener("blur", function () {
@@ -407,9 +350,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(data => {
                     if (data.status === 200 && data.results) {
                         const result = data.results[0];
-                        addressInput.value = `${result.address1} ${result.address2} ${result.address3}`;
-                        const userLocation = getApproximateLocation(postalCode);
-                        populateCompaniesByDistance(userLocation);
+                        const address = `${result.address1} ${result.address2} ${result.address3}`;
+                        addressInput.value = address;
+
+                        // **住所から緯度経度を取得して、中間処理企業を表示**
+                        getCoordinatesFromAddress(address).then(userLocation => {
+                            populateCompaniesByDistance(userLocation);
+                        }).catch(error => {
+                            console.error("住所から緯度経度取得エラー:", error);
+                            alert("最寄りの中間処理企業を取得できませんでした");
+                        });
                     } else {
                         alert("郵便番号に該当する住所が見つかりません");
                     }
@@ -421,7 +371,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // **概算の移動時間順に中間処理企業を並べる**
-    async function populateCompaniesByDistance(userLocation, approximateLocation) {
+    async function populateCompaniesByDistance(userLocation) {
         if (!userLocation || !userLocation.lat || !userLocation.lng) {
             console.error("エラー: userLocation が無効です", userLocation);
             return;
@@ -444,6 +394,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
         processingCompanySelect.value = companiesWithTime[0].name;
         travelTimeInput.value = `${companiesWithTime[0].time} 分`;
+    }
+
+    // **Google Maps Directions APIを使って移動時間を取得**
+    function getTravelTimeFromGoogleMaps(userLocation, companyLocation) {
+        const service = new google.maps.DirectionsService();
+        const request = {
+            origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
+            destination: new google.maps.LatLng(companyLocation.lat, companyLocation.lng),
+            travelMode: google.maps.TravelMode.DRIVING
+        };
+
+        return new Promise((resolve, reject) => {
+            service.route(request, function (result, status) {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    // 移動時間を分単位で取得
+                    const duration = result.routes[0].legs[0].duration.value / 60;
+                    resolve(Math.round(duration));
+                } else {
+                    reject("移動時間の取得に失敗しました");
+                }
+            });
+        });
     }
 
     // **中間処理企業の変更を監視して移動時間を更新**
@@ -573,6 +545,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+
 
 
 
