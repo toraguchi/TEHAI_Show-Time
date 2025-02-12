@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!processingCompanySelect) return;
 
     // **Google Maps APIのキー**
-    const googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // ここにGoogle Maps APIキーを記入
+    const googleMapsApiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw"; // ここにGoogle Maps APIキーを記入
 
     // **Google Maps Geocoderを使って住所から緯度経度を取得**
     function getCoordinatesFromAddress(address) {
