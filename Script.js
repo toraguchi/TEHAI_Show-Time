@@ -323,164 +323,114 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!processingCompanySelect) return;
 
-    // **Google Maps APIのキー**
-    const googleMapsApiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw"; // ここにGoogle Maps APIキーを記入
+    // **「現在地で作成」ボタンの処理**
+    document.getElementById("create-case-location").addEventListener("click", function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    document.getElementById("address").dataset.lat = userLocation.lat;
+                    document.getElementById("address").dataset.lng = userLocation.lng;
 
-    // **Google Maps Geocoderを使って住所から緯度経度を取得**
-    function getCoordinatesFromAddress(address) {
-        const geocoder = new google.maps.Geocoder();
-        return new Promise((resolve, reject) => {
-            geocoder.geocode({ 'address': address }, function (results, status) {
-                if (status === 'OK' && results[0]) {
-                    const location = results[0].geometry.location;
-                    resolve({ lat: location.lat(), lng: location.lng() });
-                } else {
-                    reject("住所から緯度経度を取得できませんでした");
-                }
-            });
-        });
-    }
-
-// **郵便番号から住所を取得**
-postalCodeInput.addEventListener("blur", function () {
-    const postalCode = postalCodeInput.value.trim();
-    if (postalCode) {
-        fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 200 && data.results) {
-                    const result = data.results[0];
-                    const address = `${result.address1} ${result.address2} ${result.address3}`;
-                    addressInput.value = address;
-                    console.log("住所:", address);
-
-                    // **住所から緯度経度を取得して、中間処理企業を表示**
-                    getCoordinatesFromAddress(address).then(userLocation => {
-                        console.log("ユーザーの緯度経度:", userLocation);
-                        populateCompaniesByDistance(userLocation);
-                    }).catch(error => {
-                        console.error("住所から緯度経度取得エラー:", error);
-                        alert("最寄りの中間処理企業を取得できませんでした");
+                    // **現在地の郵便番号と住所を取得**
+                    reverseGeocode(userLocation.lat, userLocation.lng, function (address, postalCode) {
+                        addressInput.value = address;
+                        postalCodeInput.value = postalCode;
+                        const approximateLocation = getApproximateLocation(postalCode);
+                        populateCompaniesByDistance(approximateLocation);
                     });
-                } else {
-                    alert("郵便番号に該当する住所が見つかりません");
+                },
+                function (error) {
+                    console.error("位置情報の取得に失敗しました:", error);
+                    alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
                 }
-            })
-            .catch(error => {
-                console.error("郵便番号検索エラー:", error);
-            });
-    }
-});
-
-// **住所から緯度経度を取得**
-function getCoordinatesFromAddress(address) {
-    return new Promise((resolve, reject) => {
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: address }, function(results, status) {
-            if (status === google.maps.GeocoderStatus.OK) {
-                const location = results[0].geometry.location;
-                const userLocation = { lat: location.lat(), lng: location.lng() };
-                resolve(userLocation);
-            } else {
-                reject("住所から緯度経度を取得できませんでした");
-            }
-        });
-    });
-}
-
-// **最寄りの中間処理企業を表示**
-async function populateCompaniesByDistance(userLocation) {
-    if (!userLocation || !userLocation.lat || !userLocation.lng) {
-        console.error("エラー: userLocation が無効です", userLocation);
-        return;
-    }
-
-    console.log("最寄り企業を表示中...");
-
-    let companiesWithTime = await Promise.all(companies.map(async company => {
-        if (!company.location || !company.location.lat || !company.location.lng) {
-            console.error("企業の位置情報が無効です", company);
-            return null;
+            );
         }
-        console.log("企業の緯度経度:", company.location);
-        const travelTime = await getTravelTimeFromGoogleMaps(userLocation, company.location);
-        return {
-            name: company.name,
-            location: company.location,
-            time: travelTime
+        formContainer.classList.remove("hidden");
+        editingIndex = null;
+        resetForm();
+    });
+
+    // **郵便番号から住所を取得**
+    postalCodeInput.addEventListener("blur", function () {
+        const postalCode = postalCodeInput.value.trim();
+        if (postalCode) {
+            fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200 && data.results) {
+                        const result = data.results[0];
+                        addressInput.value = `${result.address1} ${result.address2} ${result.address3}`;
+                        const userLocation = getApproximateLocation(postalCode);
+                        populateCompaniesByDistance(userLocation);
+                    } else {
+                        alert("郵便番号に該当する住所が見つかりません");
+                    }
+                })
+                .catch(error => {
+                    console.error("郵便番号検索エラー:", error);
+                });
+        }
+    });
+
+    // **概算の緯度・経度を取得（郵便番号から推測）**
+    function getApproximateLocation(postalCode) {
+        const regionMapping = {
+            "100": { lat: 35.682839, lng: 139.759455 }, // 東京都千代田区（例）
+            "150": { lat: 35.658034, lng: 139.701636 }, // 東京都渋谷区
+            "220": { lat: 35.447507, lng: 139.642345 }, // 神奈川県横浜市
+            "530": { lat: 34.693737, lng: 135.502167 }, // 大阪府大阪市
+            "810": { lat: 33.590355, lng: 130.401716 }  // 福岡県福岡市
         };
-    }));
 
-    // Nullを除外して、移動時間がある企業のみを表示
-    companiesWithTime = companiesWithTime.filter(company => company !== null);
-
-    console.log("企業リスト（移動時間付き）:", companiesWithTime);
-
-    if (companiesWithTime.length === 0) {
-        console.log("最寄りの中間処理企業が見つかりません");
-        return;
+        const regionCode = postalCode.substring(0, 3); // 最初の3桁をキーにする
+        return regionMapping[regionCode] || { lat: 35.6895, lng: 139.6917 }; // デフォルト: 東京
     }
 
-    processingCompanySelect.innerHTML = companiesWithTime.map(c =>
-        `<option value="${c.name}" data-time="${c.time}">${c.name} (移動時間: ${c.time} 分)</option>`
-    ).join('');
-
-    processingCompanySelect.value = companiesWithTime[0].name;
-    travelTimeInput.value = `${companiesWithTime[0].time} 分`;
-}
-
-// **Google Maps Directions APIを使って移動時間を取得**
-function getTravelTimeFromGoogleMaps(userLocation, companyLocation) {
-    const service = new google.maps.DirectionsService();
-    const request = {
-        origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
-        destination: new google.maps.LatLng(companyLocation.lat, companyLocation.lng),
-        travelMode: google.maps.TravelMode.DRIVING
-    };
-
-    return new Promise((resolve, reject) => {
-        service.route(request, function (result, status) {
-            if (status === google.maps.DirectionsStatus.OK) {
-                // 移動時間を分単位で取得
-                const duration = result.routes[0].legs[0].duration.value / 60;
-                console.log("移動時間（分）:", duration);
-                resolve(Math.round(duration));
-            } else {
-                console.error("移動時間の取得に失敗しました", status);
-                reject("移動時間の取得に失敗しました");
-            }
-        });
-    });
-}
-
-
-
-    // **中間処理企業の変更を監視して移動時間を更新**
-    processingCompanySelect.addEventListener("change", function () {
-        const selectedCompany = processingCompanySelect.value;
-        const company = companies.find(c => c.name === selectedCompany);
-
-        if (company && document.getElementById("address").dataset.lat && document.getElementById("address").dataset.lng) {
-            const userLocation = {
-                lat: parseFloat(document.getElementById("address").dataset.lat),
-                lng: parseFloat(document.getElementById("address").dataset.lng)
-            };
-            getTravelTimeFromGoogleMaps(userLocation, company.location).then(travelTime => {
-                travelTimeInput.value = `${travelTime} 分`;
-            });
-        }
-    });
-
-    // **案件の保存**
-    saveCaseButton.addEventListener("click", function () {
-        const processingCompany = processingCompanySelect.value;
-
-        // 「中間処理企業」の必須チェック
-        if (!processingCompany) {
-            alert("中間処理企業を選択してください。");
+    // **概算の移動時間順に中間処理企業を並べる**
+    function populateCompaniesByDistance(userLocation) {
+        if (!userLocation || !userLocation.lat || !userLocation.lng) {
+            console.error("エラー: userLocation が無効です", userLocation);
             return;
         }
 
+        let companiesWithTime = companies.map(company => ({
+            name: company.name,
+            location: company.location,
+            time: getApproximateTravelTime(userLocation, company.location)
+        }));
+
+        companiesWithTime.sort((a, b) => a.time - b.time);
+
+        processingCompanySelect.innerHTML = companiesWithTime.map(c =>
+            `<option value="${c.name}" data-time="${c.time}">${c.name} (概算移動時間: ${c.time} 分)</option>`
+        ).join('');
+
+        processingCompanySelect.value = companiesWithTime[0].name;
+        travelTimeInput.value = `${companiesWithTime[0].time} 分`;
+    }
+
+    // **概算の移動時間を計算（直線距離ベース）**
+    function getApproximateTravelTime(loc1, loc2) {
+        if (!loc1 || !loc2 || !loc1.lat || !loc1.lng || !loc2.lat || !loc2.lng) {
+            console.error("エラー: getApproximateTravelTime に無効な位置情報が渡されました", loc1, loc2);
+            return 999;
+        }
+
+        const R = 6371;
+        const dLat = (loc2.lat - loc1.lat) * (Math.PI / 180);
+        const dLng = (loc2.lng - loc1.lng) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(loc1.lat * (Math.PI / 180)) * Math.cos(loc2.lat * (Math.PI / 180)) *
+                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+        const speed = 40;
+        return Math.round((distance / speed) * 60);
+    }
+
+    // **案件の保存**
+    saveCaseButton.addEventListener("click", function () {
         const customerName = document.getElementById("customer-name").value.trim();
         const phoneNumber = document.getElementById("phone-number").value.trim();
         const postalCode = document.getElementById("postal-code").value.trim();
@@ -489,99 +439,55 @@ function getTravelTimeFromGoogleMaps(userLocation, companyLocation) {
         const workDate = document.getElementById("work-date").value;
         const price = document.getElementById("price").value.trim();
         const status = document.getElementById("status").value;
+        const processingCompany = processingCompanySelect.value;
         const travelTime = document.getElementById("travel-time").value;
+
+        if (!processingCompany) {
+            alert("中間処理企業を選択してください。");
+            return;
+        }
 
         let cases = JSON.parse(localStorage.getItem("cases")) || [];
 
-        const caseData = {
-            customerName, phoneNumber, postalCode, address, estimateDate, workDate, price, status, processingCompany, travelTime
-        };
-
-        // 編集の場合、既存の案件を更新
         if (editingIndex !== null) {
-            cases[editingIndex] = caseData;
+            cases[editingIndex] = { customerName, phoneNumber, postalCode, address, estimateDate, workDate, price, status, processingCompany, travelTime };
         } else {
-            // 新規作成
-            cases.push(caseData);
+            cases.push({ customerName, phoneNumber, postalCode, address, estimateDate, workDate, price, status, processingCompany, travelTime });
         }
 
-        // localStorageに保存
         localStorage.setItem("cases", JSON.stringify(cases));
-
-        alert("案件が保存されました。");
-
-        // 案件一覧を更新
-        updateCaseList();
-
         formContainer.classList.add("hidden");
+        editingIndex = null;
         resetForm();
-        editingIndex = null; // 編集モード終了
     });
 
-    // **案件一覧の更新**
-    function updateCaseList() {
-        const cases = JSON.parse(localStorage.getItem("cases")) || [];
-        caseList.innerHTML = cases.map((caseData, index) =>
-            `<div class="case-card">
-                <h3>${caseData.customerName}</h3>
-                <p>中間処理企業: ${caseData.processingCompany} | 移動時間: ${caseData.travelTime}分</p>
-                <p>住所: ${caseData.address} | 価格: ${caseData.price}円</p>
-                <button class="edit-case" data-index="${index}">編集</button>
-                <button class="delete-case" data-index="${index}">削除</button>
-            </div>`
-        ).join('');
-
-        // 編集ボタンと削除ボタンのイベントリスナーを追加
-        document.querySelectorAll(".edit-case").forEach(button => {
-            button.addEventListener("click", function () {
-                const index = button.dataset.index;
-                editingIndex = index;
-                const caseData = cases[index];
-
-                // フォームに既存のデータを入力
-                document.getElementById("customer-name").value = caseData.customerName;
-                document.getElementById("phone-number").value = caseData.phoneNumber;
-                document.getElementById("postal-code").value = caseData.postalCode;
-                document.getElementById("address").value = caseData.address;
-                document.getElementById("estimate-date").value = caseData.estimateDate;
-                document.getElementById("work-date").value = caseData.workDate;
-                document.getElementById("price").value = caseData.price;
-                document.getElementById("status").value = caseData.status;
-                processingCompanySelect.value = caseData.processingCompany;
-                travelTimeInput.value = caseData.travelTime;
-
-                formContainer.classList.remove("hidden");
-            });
-        });
-
-        document.querySelectorAll(".delete-case").forEach(button => {
-            button.addEventListener("click", function () {
-                const index = button.dataset.index;
-                cases.splice(index, 1);
-                localStorage.setItem("cases", JSON.stringify(cases));
-                updateCaseList(); // 一覧を更新
-            });
-        });
-    }
-
-    // **ページロード時に案件一覧を更新**
-    updateCaseList();
-
-    // **フォームをリセット**
     function resetForm() {
-        document.getElementById("customer-name").value = '';
-        document.getElementById("phone-number").value = '';
-        document.getElementById("postal-code").value = '';
-        document.getElementById("address").value = '';
-        document.getElementById("estimate-date").value = '';
-        document.getElementById("work-date").value = '';
-        document.getElementById("price").value = '';
-        document.getElementById("status").value = '未処理';
-        processingCompanySelect.value = '';
-        travelTimeInput.value = '';
+        document.getElementById("crm-form").reset();
+        travelTimeInput.value = "";
     }
-
 });
+// 案件一覧をロードする関数
+function loadCases() {
+    const caseList = document.getElementById("case-list");
+    caseList.innerHTML = ""; // リストをクリア
+    let cases = JSON.parse(localStorage.getItem("cases")) || [];
+
+    cases.forEach((c, index) => {
+        const caseItem = document.createElement("div");
+        caseItem.classList.add("case-item");
+        caseItem.innerHTML = `
+            <p><strong>お客様名:</strong> ${c.customerName}</p>
+            <p><strong>住所:</strong> ${c.address}</p>
+            <p><strong>中間処理企業:</strong> ${c.processingCompany} (${c.travelTime})</p>
+            <button onclick="editCase(${index})">編集</button>
+            <button onclick="deleteCase(${index})">削除</button>
+        `;
+        caseList.appendChild(caseItem);
+    });
+}
+
+// ページ読み込み時に案件をロード
+document.addEventListener("DOMContentLoaded", loadCases);
 
 
 
