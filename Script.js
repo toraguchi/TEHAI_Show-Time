@@ -350,6 +350,14 @@ document.addEventListener("DOMContentLoaded", function () {
         editingIndex = null;
         resetForm();
     });
+    navigator.geolocation.getCurrentPosition(
+        function (position) {
+            console.log("現在地取得成功:", position.coords);
+        },
+        function (error) {
+            console.error("位置情報取得エラー:", error);
+        }
+    );    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             function (position) {
@@ -381,6 +389,25 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     } else {
         alert("このブラウザは位置情報取得に対応していません。");
+        fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode=1000001")
+    .then(response => response.json())
+    .then(data => {
+        // JSONのキーが全角になっている可能性があるため、修正
+        if (data["ステータス"] === 200 && data["結果"]) {
+            const result = data["結果"][0]; 
+            const formattedData = {
+                address1: result["住所1"],  // 東京都
+                address2: result["address2"], // 千代田区
+                address3: result["address3"], // 千代田
+                zipcode: result["郵便番号"], // 1000001
+            };
+            console.log(formattedData);
+        } else {
+            console.error("郵便番号の取得に失敗しました", data["メッセージ"]);
+        }
+    })
+    .catch(error => console.error("APIエラー:", error));
+
     }
     function reverseGeocode(lat, lng, callback) {
         const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  // ここに正しいAPIキーを入力
