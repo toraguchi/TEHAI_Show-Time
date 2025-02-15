@@ -463,7 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "810": { lat: 33.590355, lng: 130.401716 }  // 福岡県福岡市
         };
 
-        const regionCode = postalCode.substring(0, 3); // 最初の3桁をキーにする
+        const regionCode = postalCode.substring(0,7); // 最初の7桁をキーにする
         return regionMapping[regionCode] || { lat: 35.6895, lng: 139.6917 }; // デフォルト: 東京
     }
    // Google Maps Directions APIを使ってルートの移動時間を取得
