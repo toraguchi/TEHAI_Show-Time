@@ -311,27 +311,6 @@ function openRoute(companyName, userLat, userLng) {
     // 新しいタブでGoogleマップを開く
     window.open(googleMapsURL, '_blank');
 }
-function reverseGeocode(lat, lng, callback) {
-    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=YOUR_API_KEY`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "OK" && data.results.length > 0) {
-                let address = data.results[0].formatted_address;
-                let postalCode = "";
-                data.results[0].address_components.forEach(component => {
-                    if (component.types.includes("postal_code")) {
-                        postalCode = component.long_name;
-                    }
-                });
-                callback(address, postalCode);
-            } else {
-                console.error("逆ジオコーディング失敗:", data);
-                callback("住所取得不可", "");
-            }
-        })
-        .catch(error => console.error("逆ジオコーディングエラー:", error));
-}
-
 document.addEventListener("DOMContentLoaded", function () {
     const caseList = document.getElementById("case-list");
     const processingCompanySelect = document.getElementById("processing-company");
@@ -404,33 +383,38 @@ document.addEventListener("DOMContentLoaded", function () {
         alert("このブラウザは位置情報取得に対応していません。");
     }
     function reverseGeocode(lat, lng, callback) {
-        const geocoder = new google.maps.Geocoder();
-        const latlng = new google.maps.LatLng(lat, lng);
-    
-        geocoder.geocode({ location: latlng }, function (results, status) {
-            if (status === google.maps.GeocoderStatus.OK) {
-                if (results[0]) {
-                    let address = results[0].formatted_address;
+        const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  // ここに正しいAPIキーを入力
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "OK" && data.results.length > 0) {
+                    let address = data.results[0].formatted_address;
                     let postalCode = "";
     
-                    results[0].address_components.forEach(component => {
-                        if (component.types.includes("postal_code")) {
-                            postalCode = component.long_name;
+                    for (let result of data.results) {
+                        for (let component of result.address_components) {
+                            if (component.types.includes("postal_code")) {
+                                postalCode = component.long_name;
+                                break;
+                            }
                         }
-                    });
+                        if (postalCode) break;
+                    }
     
-                    console.log("住所:", address, "郵便番号:", postalCode);
+                    console.log("取得した住所:", address);
+                    console.log("取得した郵便番号:", postalCode);
                     callback(address, postalCode);
                 } else {
-                    console.warn("逆ジオコーディング結果なし");
-                    callback("", "");
+                    console.error("逆ジオコーディング失敗:", data);
+                    callback("住所取得不可", "");
                 }
-            } else {
-                console.error("逆ジオコーディング失敗:", status);
-                callback("", "");
-            }
-        });
+            })
+            .catch(error => {
+                console.error("逆ジオコーディングエラー:", error);
+                callback("住所取得不可", "");
+            });
     }
+    
     // **郵便番号から住所を取得**
     postalCodeInput.addEventListener("blur", function () {
         const postalCode = postalCodeInput.value.trim();
@@ -463,7 +447,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "810": { lat: 33.590355, lng: 130.401716 }  // 福岡県福岡市
         };
 
-        const regionCode = postalCode.substring(0,7); // 最初の7桁をキーにする
+        const regionCode = postalCode.replace("-", "").substring(0, 3);
         return regionMapping[regionCode] || { lat: 35.6895, lng: 139.6917 }; // デフォルト: 東京
     }
    // Google Maps Directions APIを使ってルートの移動時間を取得
