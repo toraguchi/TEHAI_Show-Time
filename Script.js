@@ -311,6 +311,27 @@ function openRoute(companyName, userLat, userLng) {
     // 新しいタブでGoogleマップを開く
     window.open(googleMapsURL, '_blank');
 }
+function reverseGeocode(lat, lng, callback) {
+    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=YOUR_API_KEY`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "OK" && data.results.length > 0) {
+                let address = data.results[0].formatted_address;
+                let postalCode = "";
+                data.results[0].address_components.forEach(component => {
+                    if (component.types.includes("postal_code")) {
+                        postalCode = component.long_name;
+                    }
+                });
+                callback(address, postalCode);
+            } else {
+                console.error("逆ジオコーディング失敗:", data);
+                callback("住所取得不可", "");
+            }
+        })
+        .catch(error => console.error("逆ジオコーディングエラー:", error));
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const caseList = document.getElementById("case-list");
     const processingCompanySelect = document.getElementById("processing-company");
