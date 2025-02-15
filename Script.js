@@ -371,7 +371,66 @@ document.addEventListener("DOMContentLoaded", function () {
         editingIndex = null;
         resetForm();
     });
-
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                const userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                
+                console.log("現在地取得成功:", userLocation);
+                
+                reverseGeocode(userLocation.lat, userLocation.lng, function (address, postalCode) {
+                    if (postalCode) {
+                        console.log("取得した郵便番号:", postalCode);
+                        addressInput.value = address;
+                        postalCodeInput.value = postalCode;
+                        const approximateLocation = getApproximateLocation(postalCode);
+                        populateCompaniesByDistance(approximateLocation);
+                    } else {
+                        console.warn("郵便番号が取得できませんでした。");
+                        alert("郵便番号の取得に失敗しました。");
+                    }
+                });
+            },
+            function (error) {
+                console.error("位置情報の取得に失敗しました:", error);
+                alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    } else {
+        alert("このブラウザは位置情報取得に対応していません。");
+    }
+    function reverseGeocode(lat, lng, callback) {
+        const geocoder = new google.maps.Geocoder();
+        const latlng = new google.maps.LatLng(lat, lng);
+    
+        geocoder.geocode({ location: latlng }, function (results, status) {
+            if (status === google.maps.GeocoderStatus.OK) {
+                if (results[0]) {
+                    let address = results[0].formatted_address;
+                    let postalCode = "";
+    
+                    results[0].address_components.forEach(component => {
+                        if (component.types.includes("postal_code")) {
+                            postalCode = component.long_name;
+                        }
+                    });
+    
+                    console.log("住所:", address, "郵便番号:", postalCode);
+                    callback(address, postalCode);
+                } else {
+                    console.warn("逆ジオコーディング結果なし");
+                    callback("", "");
+                }
+            } else {
+                console.error("逆ジオコーディング失敗:", status);
+                callback("", "");
+            }
+        });
+    }
     // **郵便番号から住所を取得**
     postalCodeInput.addEventListener("blur", function () {
         const postalCode = postalCodeInput.value.trim();
