@@ -407,48 +407,67 @@ document.addEventListener("DOMContentLoaded", function () {
         const regionCode = postalCode.substring(0, 3); // 最初の3桁をキーにする
         return regionMapping[regionCode] || { lat: 35.6895, lng: 139.6917 }; // デフォルト: 東京
     }
-
-    // **概算の移動時間順に中間処理企業を並べる**
-    function populateCompaniesByDistance(userLocation) {
-        if (!userLocation || !userLocation.lat || !userLocation.lng) {
-            console.error("エラー: userLocation が無効です", userLocation);
-            return;
-        }
-
-        let companiesWithTime = companies.map(company => ({
-            name: company.name,
-            location: company.location,
-            time: getApproximateTravelTime(userLocation, company.location)
-        }));
-
-        companiesWithTime.sort((a, b) => a.time - b.time);
-
-        processingCompanySelect.innerHTML = companiesWithTime.map(c =>
-            `<option value="${c.name}" data-time="${c.time}">${c.name} (概算移動時間: ${c.time} 分)</option>`
-        ).join('');
-
-        processingCompanySelect.value = companiesWithTime[0].name;
-        travelTimeInput.value = `${companiesWithTime[0].time} 分`;
+   // Google Maps Directions APIを使ってルートの移動時間を取得
+function getApproximateTravelTime(loc1, loc2, callback) {
+    if (!loc1 || !loc2 || !loc1.lat || !loc1.lng || !loc2.lat || !loc2.lng) {
+        console.error("エラー: getApproximateTravelTime に無効な位置情報が渡されました", loc1, loc2);
+        callback(999); // エラー時のデフォルト値
+        return;
     }
 
-    // **概算の移動時間を計算（直線距離ベース）**
-    function getApproximateTravelTime(loc1, loc2) {
-        if (!loc1 || !loc2 || !loc1.lat || !loc1.lng || !loc2.lat || !loc2.lng) {
-            console.error("エラー: getApproximateTravelTime に無効な位置情報が渡されました", loc1, loc2);
-            return 999;
-        }
+    const directionsService = new google.maps.DirectionsService();
 
-        const R = 6371;
-        const dLat = (loc2.lat - loc1.lat) * (Math.PI / 180);
-        const dLng = (loc2.lng - loc1.lng) * (Math.PI / 180);
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(loc1.lat * (Math.PI / 180)) * Math.cos(loc2.lat * (Math.PI / 180)) *
-                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-        const speed = 40;
-        return Math.round((distance / speed) * 60);
+    const request = {
+        origin: new google.maps.LatLng(loc1.lat, loc1.lng),
+        destination: new google.maps.LatLng(loc2.lat, loc2.lng),
+        travelMode: google.maps.TravelMode.DRIVING // 車移動
+    };
+
+    directionsService.route(request, function (response, status) {
+        if (status === google.maps.DirectionsStatus.OK) {
+            const duration = response.routes[0].legs[0].duration.value / 60; // 秒 → 分
+            callback(Math.round(duration)); // 四捨五入
+        } else {
+            console.error("Google Maps API エラー: ", status);
+            callback(999); // エラー時のデフォルト値
+        }
+    });
+}
+// Google Maps APIを使って移動時間順に企業を並べる
+function populateCompaniesByDistance(userLocation) {
+    if (!userLocation || !userLocation.lat || !userLocation.lng) {
+        console.error("エラー: userLocation が無効です", userLocation);
+        return;
     }
+
+    let companiesWithTime = [];
+    let completedRequests = 0;
+
+    companies.forEach((company, index) => {
+        getApproximateTravelTime(userLocation, company.location, function (time) {
+            companiesWithTime.push({
+                name: company.name,
+                location: company.location,
+                time: time
+            });
+
+            completedRequests++;
+
+            if (completedRequests === companies.length) {
+                // すべての企業の時間が取得できたらソート
+                companiesWithTime.sort((a, b) => a.time - b.time);
+
+                processingCompanySelect.innerHTML = companiesWithTime.map(c =>
+                    `<option value="${c.name}" data-time="${c.time}">${c.name} (移動時間: ${c.time} 分)</option>`
+                ).join('');
+
+                processingCompanySelect.value = companiesWithTime[0].name;
+                travelTimeInput.value = `${companiesWithTime[0].time} 分`;
+            }
+        });
+    });
+}
+
 
     // **案件の保存**
     saveCaseButton.addEventListener("click", function () {
