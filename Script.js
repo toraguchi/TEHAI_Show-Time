@@ -445,12 +445,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("APIエラー:", error);
                 alert("郵便番号の取得に失敗しました。");
             });
-    }    
-    function reverseGeocode(lat, lng, callback) {
-        const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  // ここに正しいAPIキーを入力
+    }   function reverseGeocode(lat, lng, callback) {
+        const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  
         fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
             .then(response => response.json())
             .then(data => {
+                console.log("逆ジオコーディングレスポンス:", data);
                 if (data.status === "OK" && data.results.length > 0) {
                     let address = data.results[0].formatted_address;
                     let postalCode = "";
@@ -476,7 +476,6 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(error => {
                 console.error("逆ジオコーディングエラー:", error);
                 callback("住所取得不可", "");
-                console.log("逆ジオコーディングレスポンス:", data);
             });
     }
     let postalCode;  // 変数の初期化
