@@ -358,61 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("位置情報取得エラー:", error);
         }
     );
-    navigator.geolocation.getCurrentPosition(
-        function (position) {
-            const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-            document.getElementById("address").dataset.lat = userLocation.lat;
-            document.getElementById("address").dataset.lng = userLocation.lng;
-    
-            // **現在地の郵便番号と住所を取得**
-            reverseGeocode(userLocation.lat, userLocation.lng, function (address, postalCode) {
-                addressInput.value = address;
-                postalCodeInput.value = postalCode;
-                const approximateLocation = getApproximateLocation(postalCode);
-                populateCompaniesByDistance(approximateLocation);
-            });
-        },
-        function (error) {
-            console.error("位置情報の取得に失敗しました:", error);
-            alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
-        }
-    );
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function (position) {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-    
-                console.log("現在地取得成功:", userLocation);
-    
-                reverseGeocode(userLocation.lat, userLocation.lng, function (address, postalCode) {
-                    if (postalCode) {
-                        console.log("取得した郵便番号:", postalCode);
-                        addressInput.value = address;
-                        postalCodeInput.value = postalCode;
-                        const approximateLocation = getApproximateLocation(postalCode);
-                        populateCompaniesByDistance(approximateLocation);
-                    } else {
-                        console.warn("郵便番号が取得できませんでした。");
-                        alert("郵便番号の取得に失敗しました。");
-                        fetchPostalCodeFallback(); // 失敗した場合、APIで検索
-                    }
-                });
-            },
-            function (error) {
-                console.error("位置情報の取得に失敗しました:", error);
-                alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
-                fetchPostalCodeFallback(); // 位置情報が取れない場合、郵便番号APIを使う
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    } else {
-        alert("このブラウザは位置情報取得に対応していません。");
-        fetchPostalCodeFallback(); // 位置情報が使えない場合、APIで検索
-    }   function reverseGeocode(lat, lng, callback) {
+      function reverseGeocode(lat, lng, callback) {
         const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  
         fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
             .then(response => response.json())
