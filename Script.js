@@ -412,39 +412,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
         alert("このブラウザは位置情報取得に対応していません。");
         fetchPostalCodeFallback(); // 位置情報が使えない場合、APIで検索
-    }
-    
-    /**
-     * 位置情報が取得できなかった場合の代替処理（郵便番号APIで検索）
-     */
-    function fetchPostalCodeFallback() {
-        fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode=1000001")
-            .then(response => response.json())
-            .then(data => {
-                console.log("郵便番号APIレスポンス:", data);
-    
-                // 正しいキー名を確認
-                if (data.status === 200 && data.results) {
-                    const result = data.results[0]; // 正しく `results` を参照
-                    const formattedData = {
-                        address1: result.address1,  // 東京都
-                        address2: result.address2, // 千代田区
-                        address3: result.address3, // 千代田
-                        zipcode: result.zipcode,   // 1000001
-                    };
-    
-                    console.log("取得した住所:", formattedData);
-                    addressInput.value = `${formattedData.address1} ${formattedData.address2} ${formattedData.address3}`;
-                    postalCodeInput.value = formattedData.zipcode;
-                } else {
-                    console.error("郵便番号の取得に失敗しました:", data.message);
-                    alert("郵便番号を取得できませんでした。");
-                }
-            })
-            .catch(error => {
-                console.error("APIエラー:", error);
-                alert("郵便番号の取得に失敗しました。");
-            });
     }   function reverseGeocode(lat, lng, callback) {
         const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";  
         fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
