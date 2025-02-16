@@ -357,7 +357,27 @@ document.addEventListener("DOMContentLoaded", function () {
         function (error) {
             console.error("位置情報取得エラー:", error);
         }
-    );    
+    );
+    navigator.geolocation.getCurrentPosition(
+        function (position) {
+            const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+            document.getElementById("address").dataset.lat = userLocation.lat;
+            document.getElementById("address").dataset.lng = userLocation.lng;
+    
+            // **現在地の郵便番号と住所を取得**
+            reverseGeocode(userLocation.lat, userLocation.lng, function (address, postalCode) {
+                addressInput.value = address;
+                postalCodeInput.value = postalCode;
+                const approximateLocation = getApproximateLocation(postalCode);
+                populateCompaniesByDistance(approximateLocation);
+            });
+        },
+        function (error) {
+            console.error("位置情報の取得に失敗しました:", error);
+            alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
+        }
+    );
+    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             function (position) {
@@ -456,9 +476,17 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(error => {
                 console.error("逆ジオコーディングエラー:", error);
                 callback("住所取得不可", "");
+                console.log("逆ジオコーディングレスポンス:", data);
             });
     }
-    
+    let postalCode;  // 変数の初期化
+// postalCodeを適切に取得する処理
+if (postalCode) {
+    // postalCodeを使う処理
+} else {
+    console.error('郵便番号が取得できませんでした');
+}
+
     // **郵便番号から住所を取得**
     postalCodeInput.addEventListener("blur", function () {
         const postalCode = postalCodeInput.value.trim();
@@ -480,6 +508,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
         }
     });
+    if (postalCode) {
+        console.log("取得した郵便番号:", postalCode);
+      } else {
+        console.warn("郵便番号が取得できませんでした。");
+      }
+      
 
     // **概算の緯度・経度を取得（郵便番号から推測）**
     function getApproximateLocation(postalCode) {
@@ -494,7 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const regionCode = postalCode.replace("-", "").substring(0, 3);
         return regionMapping[regionCode] || { lat: 35.6895, lng: 139.6917 }; // デフォルト: 東京
     }
-   // Google Maps Directions APIを使ってルートの移動時間を取得
+ // Google Maps Directions APIを使って移動時間を取得
 function getApproximateTravelTime(loc1, loc2, callback) {
     if (!loc1 || !loc2 || !loc1.lat || !loc1.lng || !loc2.lat || !loc2.lng) {
         console.error("エラー: getApproximateTravelTime に無効な位置情報が渡されました", loc1, loc2);
@@ -520,40 +554,67 @@ function getApproximateTravelTime(loc1, loc2, callback) {
         }
     });
 }
-// Google Maps APIを使って移動時間順に企業を並べる
-function populateCompaniesByDistance(userLocation) {
-    if (!userLocation || !userLocation.lat || !userLocation.lng) {
-        console.error("エラー: userLocation が無効です", userLocation);
-        return;
-    }
 
+// 郵便番号から現在地の座標を取得し、企業までの移動時間を計算
+function getUserLocationAndPopulateCompanies(postalCode) {
+    fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 200 && data.results) {
+                const result = data.results[0];
+                const userLocation = {
+                    lat: parseFloat(result.latitude),
+                    lng: parseFloat(result.longitude)
+                };
+
+                populateCompaniesByDistance(userLocation);
+            } else {
+                alert("郵便番号に該当する住所が見つかりません");
+            }
+        })
+        .catch(error => {
+            console.error("郵便番号検索エラー:", error);
+        });
+}
+
+// 移動時間を基に企業をソートして表示
+function populateCompaniesByDistance(userLocation) {
     let companiesWithTime = [];
     let completedRequests = 0;
 
-    companies.forEach((company, index) => {
+    companies.forEach((company) => {
         getApproximateTravelTime(userLocation, company.location, function (time) {
             companiesWithTime.push({
                 name: company.name,
-                location: company.location,
                 time: time
             });
 
             completedRequests++;
 
             if (completedRequests === companies.length) {
-                // すべての企業の時間が取得できたらソート
+                // すべての企業の移動時間が取得できたらソート
                 companiesWithTime.sort((a, b) => a.time - b.time);
 
+                // <select>タグに企業を移動時間順に表示
+                const processingCompanySelect = document.getElementById("processing-company");
                 processingCompanySelect.innerHTML = companiesWithTime.map(c =>
                     `<option value="${c.name}" data-time="${c.time}">${c.name} (移動時間: ${c.time} 分)</option>`
                 ).join('');
-
+                
+                // 初期選択は移動時間が最短の企業
                 processingCompanySelect.value = companiesWithTime[0].name;
-                travelTimeInput.value = `${companiesWithTime[0].time} 分`;
             }
         });
     });
 }
+
+// 郵便番号の入力フィールドで変更があったときに呼ばれるイベント
+document.getElementById("postal-code").addEventListener("blur", function () {
+    const postalCode = this.value.trim();
+    if (postalCode) {
+        getUserLocationAndPopulateCompanies(postalCode);
+    }
+});
 
 
     // **案件の保存**
