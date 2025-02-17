@@ -288,7 +288,7 @@ vertical-align: middle;
 .crm-container h2 {
    font-size: 2em;
    color: #004aad;
-   margin-bottom: 20px;
+   margin-bottom: 40px;
 }
 
 /* フォームのデザイン */
@@ -320,8 +320,15 @@ button {
    border: none;
    border-radius: 5px;
    cursor: pointer;
+   
 }
 
 button:hover {
    background-color: #002f6c;
+}
+#address {
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    box-sizing: border-box;
 }
