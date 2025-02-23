@@ -357,6 +357,8 @@ document.addEventListener("DOMContentLoaded", function () {
     townInput.placeholder = "番地";
     addressInput.parentNode.insertBefore(townInput, addressInput);
 
+    
+
     if (!processingCompanySelect) return;
     // 自動で住所読み込み
       document.getElementById("create-case-location").addEventListener("click", async function () {
@@ -489,167 +491,201 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
     
-    function getLatLngFromAddress(address) {
-        const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "OK" && data.results.length > 0) {
-                    const location = data.results[0].geometry.location;
-                    calculateDistances(location); // 取得した位置情報を利用して企業リストを更新
-                } else {
-                    console.error("住所の緯度経度取得に失敗:", data.status);
-                }
-            })
-            .catch(error => console.error("Geocoding API エラー:", error));
-    }
-    
-    console.log("Script.js が実行されました"); // ← これを追加
-
     document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOMContentLoaded 発火");
+        const addressInput = document.getElementById("address");
+        const prefectureInput = document.getElementById("prefecture");
+        const cityInput = document.getElementById("city");
+        const companiesDiv = document.getElementById("companies");
     
-        const processingCompanySelect = document.getElementById("processing-company");
-        if (!processingCompanySelect) {
-            console.error("プルダウンメニューが見つかりません");
-            return;
-        }
+        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+            types: ["geocode"],
+            componentRestrictions: { country: "jp" }
+        });
     
-        console.log("プルダウンメニュー取得成功:", processingCompanySelect);
-      
-        // **企業リスト**
-        const companies = [
-            { name: "丸松産業", address: "埼玉県新座市大和田2-231-1", location: { lat: 35.808179558872375, lng: 139.54994368553108 } },
-            { name: "オネスト", address: "東京都江東区新木場4-3-26", location: { lat: 35.645324883816585, lng: 139.83876319650597 } },
-            { name: "東港金属", address: "東京都大田区京浜島2-20-4", location: { lat: 35.56727553499662, lng: 139.7666577830091 } }
-        ];
+        autocomplete.addListener("place_changed", function () {
+            const place = autocomplete.getPlace();
+            if (!place.geometry) {
+                return;
+            }
     
-        function populateProcessingCompanies(sortedCompanies) {
-            console.log("populateProcessingCompanies 実行:", sortedCompanies);
+            let prefecture = "";
+            let city = "";
     
-            processingCompanySelect.innerHTML = '<option value="">企業を選択</option>'; // 初期化
-    
-            sortedCompanies.forEach(company => {
-                console.log(`企業追加: ${company.name}`);
-                const option = document.createElement("option");
-                option.value = company.name;
-                option.textContent = company.name;
-                processingCompanySelect.appendChild(option);
+            place.address_components.forEach(component => {
+                const types = component.types;
+                if (types.includes("administrative_area_level_1")) {
+                    prefecture = component.long_name;
+                } else if (types.includes("locality") || types.includes("sublocality_level_1")) {
+                    city = component.long_name;
+                }
             });
     
-            console.log("プルダウン更新完了");
+            prefectureInput.value = prefecture;
+            cityInput.value = city;
+    
+            // 中間処理企業を検索して表示
+            fetchCompanies(prefecture, city);
+        });
+    
+        function fetchCompanies(prefecture, city) {
+            // 仮のデータ。実際にはAPIからデータを取得するなどの処理が必要
+            const companies = [
+                { name: "Company A", travelTime: 10 },
+                { name: "Company B", travelTime: 20 },
+                { name: "Company C", travelTime: 5 },
+            ];
+    
+            // 移動時間でソート
+            companies.sort((a, b) => a.travelTime - b.travelTime);
+    
+            // 表示
+            companiesDiv.innerHTML = "";
+            companies.forEach(company => {
+                const div = document.createElement("div");
+                div.textContent = `${company.name} - 移動時間: ${company.travelTime}分`;
+                companiesDiv.appendChild(div);
+            });
         }
     
-        // **企業リストを追加**
-        populateProcessingCompanies(companies);
+        // CRMページのフォーム表示
+        const createCaseLocationButton = document.getElementById("create-case-location");
+        const formContainer = document.getElementById("crm-form");
+        const processingCompanySelect = document.getElementById("processing-company");
     
-
+        createCaseLocationButton.addEventListener("click", function () {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                        addressInput.dataset.lat = userLocation.lat;
+                        addressInput.dataset.lng = userLocation.lng;
     
-        function calculateDistances(userLocation) {
-            console.log("calculateDistances 実行:", userLocation);
-            console.log("getUserLocation 実行");
-            const service = new google.maps.DistanceMatrixService();
-            const destinations = companies.map(company => company.location);
-        
-            service.getDistanceMatrix(
-                {
-                    origins: [userLocation],
-                    destinations: destinations,
-                    travelMode: google.maps.TravelMode.DRIVING
-                },
-                (response, status) => {
-                    if (status === "OK") {
-                        console.log("Distance Matrix API成功:", response);
-                        const results = response.rows[0].elements;
-        
-                        companies.forEach((company, index) => {
-                            company.distance = results[index].distance.value / 1000; // km単位
+                        reverseGeocode(userLocation.lat, userLocation.lng, async function (address, postalCode) {
+                            addressInput.value = address;
+                            postalCodeInput.value = postalCode;
+                            
+                            // getApproximateLocation を非同期で実行
+                            const approximateLocation = await getApproximateLocation(postalCode);
+                            if (approximateLocation) {
+                                prefectureInput.value = approximateLocation.prefecture;
+                                cityInput.value = approximateLocation.city;
+                                townInput.value = approximateLocation.town;
+                                populateCompaniesByDistance(approximateLocation);
+                            }
                         });
-        
-                        // 企業リストを距離順にソート
-                        const sortedCompanies = [...companies].sort((a, b) => a.distance - b.distance);
-        
-                        console.log("企業リストのソート完了:", sortedCompanies);
-                        populateProcessingCompanies(sortedCompanies); // 企業リストを更新
-                    } else {
-                        console.error("Distance Matrix APIのエラー:", status);
+                    },
+                    function (error) {
+                        console.error("位置情報の取得に失敗しました:", error);
+                        alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
                     }
-                }
-            );
-        }
-        
-    
-        addressInput.addEventListener("input", function () {
-            getLatLngFromAddress(this.value);
+                );
+            }
+            formContainer.classList.remove("hidden");
+            resetForm();
         });
-        
     
-        populateProcessingCompanies(companies);
+        function reverseGeocode(lat, lng, callback) {
+            const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";
+            fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
+                .then(response => response.json())
+                .then(responseData => {
+                    if (responseData.status === "OK" && responseData.results.length > 0) {
+                        let address = responseData.results[0].formatted_address;
+                        let postalCode = "";
+                        let prefecture = "";
+                        let cityTown = ""; // 市区町村＋町名
+                        let town = ""; // 番地部分
+    
+                        responseData.results[0].address_components.forEach(component => {
+                            if (component.types.includes("postal_code")) {
+                                postalCode = component.long_name;
+                            } else if (component.types.includes("administrative_area_level_1")) {
+                                prefecture = component.long_name;
+                            } else if (
+                                component.types.includes("route") || 
+                                component.types.includes("locality") ||
+                                component.types.includes("sublocality_level_1") ||
+                                component.types.includes("sublocality_level_2")
+                            ) {
+                                cityTown = component.long_name + cityTown;
+                            } else if (component.types.includes("street_address") || component.types.includes("street_number")) {
+                                town = component.long_name;
+                            }
+                        });
+    
+                        if (!town.trim() && responseData.results[0].formatted_address) {
+                            town = "番地が見つかりません";
+                        }
+    
+                        townInput.value = town.trim();
+                        addressInput.value = address;
+                        postalCodeInput.value = postalCode;
+                        prefectureInput.value = prefecture;
+                        cityInput.value = cityTown.trim();
+    
+                        callback(address, postalCode);
+                    } else {
+                        console.error("住所の取得に失敗しました");
+                    }
+                })
+                .catch(error => {
+                    console.error("ジオコーディングのエラー:", error);
+                });
+        }
+    
+        postalCodeInput.addEventListener("blur", function () {
+            const postalCode = postalCodeInput.value.trim();
+            if (!postalCode) return;
+    
+            fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200 && data.results) {
+                        const result = data.results[0];
+                        prefectureInput.value = result.address1.trim();
+                        cityInput.value = (result.address2 + result.address3).trim();
+                        townInput.value = "";
+                    } else {
+                        alert("郵便番号に該当する住所が見つかりません");
+                        prefectureInput.value = "";
+                        cityInput.value = "";
+                        townInput.value = "";
+                    }
+                })
+                .catch(error => {
+                    console.error("郵便番号検索エラー:", error);
+                    alert("住所の取得中にエラーが発生しました");
+                });
+        });
+    
+        function getLatLngFromAddress(address) {
+            const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";
+            fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "OK" && data.results.length > 0) {
+                        const location = data.results[0].geometry.location;
+                        calculateDistances(location);
+                    } else {
+                        console.error("住所の経度緯度取得に失敗:", data.status);
+                    }
+                })
+                .catch(error => console.error("Geocoding API エラー:", error));
+        }
+    
+        console.log("Script.js が実行されました");
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            console.log("DOMContentLoaded 発火");
+    
+            if (!processingCompanySelect) {
+                console.error("プルダウンメニューが見つかりません");
+                return;
+            }
+    
+            console.log("プルダウンメニュー取得成功:", processingCompanySelect);
+        });
     });
-
-    function getUserLocation() {
-        console.log("getUserLocation 実行");
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    console.log("位置情報取得成功:", userLocation);
-                    calculateDistances(userLocation); // 位置情報取得後に距離計算
-                },
-                (error) => {
-                    console.error("位置情報取得エラー:", error.message);
-                },
-                {
-                    enableHighAccuracy: true, // 高精度な位置情報を取得
-                    maximumAge: 0 // キャッシュを無効にする
-                }
-            );
-        } else {
-            console.error("このブラウザは位置情報の取得をサポートしていません。");
-        }
-    }
-    window.onload = () => {
-        console.log("window.onload 実行");
-        getUserLocation();
-        populateProcessingCompanies(companies);
-    };
-    
-    
-    // **案件一覧の表示**
-    function displaySavedCases(savedCases) {
-        const caseListContainer = document.getElementById("case-list");
-        if (!caseListContainer) {
-            console.error("案件リストのコンテナが見つかりません");
-            return;
-        }
-    
-        caseListContainer.innerHTML = "";
-        savedCases.forEach((caseData, index) => {
-            const caseElement = document.createElement("div");
-            caseElement.className = "case-item";
-            caseElement.innerHTML = `
-                <p><strong>お客様名:</strong> ${caseData.customerName}</p>
-                <p><strong>電話番号:</strong> ${caseData.phoneNumber}</p>
-                <p><strong>住所:</strong> ${caseData.address}</p>
-                <p><strong>見積もり日:</strong> ${caseData.estimateDate}</p>
-                <p><strong>代金（税込）:</strong> ${caseData.price} 円</p>
-                <p><strong>ステータス:</strong> ${caseData.status}</p>
-                <button onclick="deleteCase(${index})">削除</button>
-            `;
-            caseListContainer.appendChild(caseElement);
-        });
-    }
-    
-    // 初期化処理
-    window.onload = () => {
-        const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
-        displaySavedCases(savedCases);
-    };
-    
-    
 
 
 // 保存された案件の表示
