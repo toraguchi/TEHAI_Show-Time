@@ -357,11 +357,21 @@ document.addEventListener("DOMContentLoaded", function () {
     townInput.placeholder = "番地";
     addressInput.parentNode.insertBefore(townInput, addressInput);
 
-    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-        types: ["geocode"],
-        componentRestrictions: { country: "jp" }
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById("processing-company");
+        if (!select) {
+            console.error("processing-company の要素が見つかりません");
+            return;
+        }
     });
+    if (!companyListContainer) {
+        console.error("companyListContainer が見つかりません");
+    }
+    console.log(document.getElementById("processing-company"));
+    console.log("displayCompanies が実行されました");
 
+    
     if (!processingCompanySelect) return;
     // 自動で住所読み込み
       document.getElementById("create-case-location").addEventListener("click", async function () {
@@ -494,35 +504,148 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     });
     
-    function getLatLngFromAddress(address) {
-        const apiKey = "AIzaSyA0hj5yFG-9OZwWcL6o0RYYieGIlax0RMw";
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "OK" && data.results.length > 0) {
-                    const location = data.results[0].geometry.location;
-                    calculateDistances(location);
-                } else {
-                    console.error("住所の経度緯度取得に失敗:", data.status);
-                }
-            })
-            .catch(error => console.error("Geocoding API エラー:", error));
-    }
-
-    console.log("Script.js が実行されました");
-
+    const companies = [
+        { name: "丸松産業", location: { lat: 35.808179558872375, lng: 139.54994368553108 } },
+        { name: "オネスト", location: { lat: 35.645324883816585, lng: 139.83876319650597 } },
+        { name: "東港金属", location: { lat: 35.56727553499662, lng: 139.7666577830091 } }
+    ];
+    
     document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOMContentLoaded 発火");
-
+        console.log("DOMContentLoaded - スクリプト実行開始");
+    
+        const processingCompanySelect = document.getElementById("processing-company");
         if (!processingCompanySelect) {
-            console.error("プルダウンメニューが見つかりません");
+            console.error("processing-company の要素が見つかりません");
             return;
         }
-
-        console.log("プルダウンメニュー取得成功:", processingCompanySelect);
+    
+        console.log("processing-company が見つかりました");
+    
+        function getDistance(loc1, loc2) {
+            const R = 6371; // 地球の半径 (km)
+            const dLat = (loc2.lat - loc1.lat) * (Math.PI / 180);
+            const dLng = (loc2.lng - loc1.lng) * (Math.PI / 180);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(loc1.lat * (Math.PI / 180)) * Math.cos(loc2.lat * (Math.PI / 180)) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return (R * c).toFixed(2);
+        }
+    
+        function populateCompanies(userLocation) {
+            console.log("populateCompanies が呼ばれました", userLocation);
+    
+            if (!userLocation || !userLocation.lat || !userLocation.lng) {
+                console.error("userLocation が不正です", userLocation);
+                return;
+            }
+    
+            const sortedCompanies = companies.map(company => ({
+                ...company,
+                distance: getDistance(userLocation, company.location)
+            })).sort((a, b) => a.distance - b.distance);
+    
+            console.log("計算された企業リスト: ", sortedCompanies);
+    
+            processingCompanySelect.innerHTML = '<option value="">企業を選択</option>';
+            sortedCompanies.forEach(company => {
+                const option = document.createElement("option");
+                option.value = company.name;
+                option.textContent = `${company.name} (${company.distance} km)`;
+                processingCompanySelect.appendChild(option);
+            });
+    
+            console.log("processing-company に企業リストを表示しました");
+        }
+    
+        function getCoordinatesFromAddress(address) {
+            return new Promise((resolve, reject) => {
+                if (!address) {
+                    reject("住所が入力されていません");
+                    return;
+                }
+    
+                console.log("住所から座標を取得中...", address);
+    
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: address }, function(results, status) {
+                    if (status === google.maps.GeocoderStatus.OK) {
+                        const location = results[0].geometry.location;
+                        console.log("Google Maps API から取得した座標:", location);
+                        resolve({ lat: location.lat(), lng: location.lng() });
+                    } else {
+                        reject("Geocoding failed: " + status);
+                    }
+                });
+            });
+        }
+    
+        document.getElementById("address").addEventListener("blur", function () {
+            console.log("住所が入力されました: ", this.value);
+    
+            getCoordinatesFromAddress(this.value)
+                .then(userLocation => {
+                    console.log("住所から座標を取得: ", userLocation);
+                    populateCompanies(userLocation);
+                })
+                .catch(error => console.error("Geocoding failed:", error));
+        });
     });
-});
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        const processingCompanySelect = document.getElementById("processing-company");
+        const companyListContainer = document.getElementById("company-list");
+    
+        if (processingCompanySelect) {
+            console.log("crm.html の処理を実行");
+            document.getElementById("address").addEventListener("blur", function () {
+                getCoordinatesFromAddress(this.value)
+                    .then(userLocation => populateCompanies(userLocation))
+                    .catch(error => console.error("Geocoding failed:", error));
+            });
+        } else if (companyListContainer) {
+            console.log("index.html の処理を実行");
+            getUserLocation();
+        } else {
+            console.error("企業リストの表示先が見つかりません。");
+        }
+    });
+    
+      
 
+    document.getElementById("save-case").addEventListener("click", function() {
+const customerName = document.getElementById("customer-name").value;
+const phoneNumber = document.getElementById("phone-number").value;
+const address = document.getElementById("address").value;
+const estimateDate = document.getElementById("estimate-date").value;
+const workDate = document.getElementById("work-date").value;
+const price = document.getElementById("price").value;
+const status = document.getElementById("status").value;
+const processingCompany = document.getElementById("processing-company").value;
+
+const caseItem = document.createElement("div");
+caseItem.classList.add("case-item");
+caseItem.innerHTML = `<p><strong>${customerName}</strong> - ${phoneNumber}</p>
+                      <p>住所: ${address}</p>
+                      <p>見積もり日: ${estimateDate}</p>
+                      <p>作業日: ${workDate}</p>
+                      <p>代金: ¥${price}</p>
+                      <p>ステータス: ${status}</p>
+                      <p>中間処理企業: ${processingCompany}</p>
+                      <button class="delete-case">削除</button>`;
+
+document.getElementById("case-list").appendChild(caseItem);
+
+caseItem.querySelector(".delete-case").addEventListener("click", function() {
+    if (!confirm("本当に削除しますか？")) return;
+    caseItem.remove();
+});});
+
+
+// 保存された案件の表示
+const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
+displaySavedCases(savedCases);
+});
 // 初期化
 window.onload = () => {
     getUserLocation();
