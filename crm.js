@@ -251,7 +251,7 @@ const deleteCase = (index) => {
 
     // サーバーにデータを保存する関数
     const saveCasesToServer = (cases) => {
-        fetch('https://35.190.238.250/api/saveCases', {
+        fetch('https://160.251.198.31/api/saveCases', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
