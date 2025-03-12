@@ -10,3 +10,4 @@ node server.js
 node server.js
 sudo ln -s /etc/nginx/sites-available/backend /etc/nginx/sites-enabled/
 sudo systemctl restart nginx
+sudo systemctl status nginx  # Nginx の状態確認
