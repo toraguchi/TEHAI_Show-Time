@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const statusSelect = document.getElementById("status");
     const phoneNumberInput = document.getElementById("phone-number");
 
-
     if (!processingCompanySelect) {
         console.error("Processing company select element not found");
         return; // Prevent further execution if the element doesn't exist
@@ -23,6 +22,259 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Save case button not found");
         return; // Prevent further execution if the button doesn't exist
     }
+
+    // 編集モードでページが読み込まれた場合、案件の内容を反映
+    const editCaseIndex = localStorage.getItem("editCaseIndex");
+    if (editCaseIndex !== null) {
+        const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
+        const caseToEdit = savedCases[editCaseIndex];
+
+        if (caseToEdit) {
+            customerNameInput.value = caseToEdit.customerName;
+            postalCodeInput.value = caseToEdit.postalCode;
+            addressInput.value = caseToEdit.address;
+            prefectureInput.value = caseToEdit.prefecture;
+            cityInput.value = caseToEdit.city;
+            townInput.value = caseToEdit.town;
+            phoneNumberInput.value = caseToEdit.phoneNumber;
+            estimateDateInput.value = caseToEdit.estimateDate;
+            priceInput.value = caseToEdit.price;
+            deadlineInput.value = caseToEdit.deadline;
+            statusSelect.value = caseToEdit.status;
+            processingCompanySelect.value = caseToEdit.company;
+            travelTimeInput.value = caseToEdit.travelTime;
+
+            formContainer.dataset.editIndex = editCaseIndex;
+            localStorage.removeItem("editCaseIndex"); // 編集モードを解除
+            formContainer.style.display = "block"; // フォームを表示
+            saveCaseButton.textContent = "更新"; // ボタンのテキストを更新に変更
+        }
+    }
+
+    // 案件作成ボタンを押すとフォームを開く
+    document.getElementById("create-case-location").addEventListener("click", function() {
+        resetForm();
+        formContainer.style.display = "block"; // フォームを表示
+        saveCaseButton.textContent = "保存"; // ボタンのテキストを保存に変更
+    });
+
+    // 保存ボタンのクリックイベント
+    saveCaseButton.addEventListener("click", function() {
+        const deadlineValue = deadlineInput.value;
+
+        const caseData = {
+            customerName: customerNameInput.value || "ー",
+            estimateDate: estimateDateInput.value || "ー",
+            prefecture: prefectureInput.value || "ー",
+            city: cityInput.value || "ー",
+            town: townInput.value || "ー",
+            company: processingCompanySelect.value || "ー",
+            travelTime: travelTimeInput.value || "ー",
+            postalCode: postalCodeInput.value || "ー",
+            address: addressInput.value || "ー",
+            price: priceInput.value || "ー",
+            status: statusSelect.value || "ー",
+            phoneNumber: phoneNumberInput.value || "ー",
+            deadline: deadlineValue ? new Date(deadlineValue).toISOString().split('T')[0] : "ー", // 日付だけを保存
+        };
+
+        // ローカルストレージから案件リストを取得
+        const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
+
+        if (formContainer.dataset.editIndex !== undefined) {
+            // 既存の案件を更新
+            const editIndex = formContainer.dataset.editIndex;
+            savedCases[editIndex] = caseData;
+            delete formContainer.dataset.editIndex; // 編集モードを解除
+        } else {
+            // 新しい案件をリストに追加
+            savedCases.unshift(caseData); // 新しい案件を一番上に追加
+        }
+
+        // ローカルストレージに保存
+        localStorage.setItem("cases", JSON.stringify(savedCases));
+
+        // 案件リストを再描画
+        displaySavedCases(savedCases);
+
+        // プッシュ通知
+        showPushNotification("案件を保存しました");
+
+        // フォームをリセット
+        resetForm();
+
+        // サーバーにデータを保存
+        saveCasesToServer(savedCases);
+    });
+
+// 案件表示
+const displaySavedCases = (savedCases) => {
+    caseList.innerHTML = ""; // 現在のリストをクリア
+
+    caseList.innerHTML = `
+    <div class="case-header">
+        <span>No.</span>
+        <span>お客様名</span>
+        <span>電話番号</span>
+        <span>住所</span>
+        <span>見積もり日</span>
+        <span>回答期限</span>
+        <span>ステータス</span>
+        <span>代金</span>
+        <span>中間処理企業</span>
+        <span>移動時間</span>
+        <span>操作</span>
+    </div>
+    `;
+
+    savedCases.forEach((caseItem, index) => {
+        const caseElement = document.createElement("div");
+        caseElement.className = "case-item";
+        caseElement.innerHTML = `
+            <span>${savedCases.length - index}</span>
+            <span>${caseItem.customerName}</span>
+            <span>${caseItem.phoneNumber}</span>
+            <span>${caseItem.prefecture} ${caseItem.city} ${caseItem.town}</span>
+            <span>${caseItem.estimateDate}</span>
+            <span>${caseItem.deadline}</span>
+            <span>${caseItem.status}</span>
+            <span>${caseItem.price}</span>
+            <span>${caseItem.company}</span>
+            <span>${caseItem.travelTime}</span>
+            <span>
+                    <button class="edit-case" data-index="${index}">編集</button>
+                    <button class="delete-case" data-index="${index}">削除</button>
+                </span>
+            `;
+
+            // ステータスに応じてハイライト
+            if (caseItem.status === "成約") {
+                caseElement.style.backgroundColor = "#ADD8E6"; // 水色
+            } else if (caseItem.status === "不成約") {
+                caseElement.style.backgroundColor = "#FFC0CB"; // ピンク色
+            } else if (caseItem.status === "検討中") {
+                caseElement.style.backgroundColor = "#FFFACD"; // 薄黄色
+            }
+
+            caseList.appendChild(caseElement);
+        });
+
+        // 編集ボタンのクリックイベント
+        document.querySelectorAll(".edit-case").forEach((button) => {
+            button.addEventListener("click", (event) => {
+                resetForm();
+                editCase(event.target.dataset.index);
+                formContainer.style.display = "block"; // フォームを表示
+                saveCaseButton.textContent = "更新"; // ボタンのテキストを更新に変更
+            });
+        });
+
+        // 削除ボタンのクリックイベント
+        document.querySelectorAll(".delete-case").forEach((button) => {
+            button.addEventListener("click", (event) => {
+                if (confirm("削除でお間違え無いですか？")) {
+                    deleteCase(event.target.dataset.index);
+                }
+            });
+        });
+        // 案件削除
+const deleteCase = (index) => {
+    const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
+    savedCases.splice(index, 1);
+
+    // ローカルストレージに保存
+    localStorage.setItem("cases", JSON.stringify(savedCases));
+
+    // 案件リストを再描画
+    displaySavedCases(savedCases);
+
+    // サーバーにデータを保存
+    saveCasesToServer(savedCases);
+};
+    };
+
+    // 案件編集
+    const editCase = (index) => {
+        const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
+        const caseData = savedCases[index];
+
+        if (!caseData) {
+            console.error("案件データが見つかりません");
+            return;
+        }
+
+        customerNameInput.value = caseData.customerName;
+        postalCodeInput.value = caseData.postalCode;
+        addressInput.value = caseData.address;
+        prefectureInput.value = caseData.prefecture;
+        cityInput.value = caseData.city;
+        townInput.value = caseData.town;
+        phoneNumberInput.value = caseData.phoneNumber;
+        estimateDateInput.value = caseData.estimateDate;
+        priceInput.value = caseData.price;
+        deadlineInput.value = caseData.deadline;
+        statusSelect.value = caseData.status;
+        processingCompanySelect.value = caseData.company;
+        travelTimeInput.value = caseData.travelTime;
+
+        formContainer.dataset.editIndex = index;
+        formContainer.style.display = "block";
+    };
+
+    // プッシュ通知の表示
+    const showPushNotification = (message) => {
+        if (Notification.permission === "granted") {
+            new Notification(message);
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification(message);
+                }
+            });
+        }
+    };
+
+    // フォームのリセット
+    function resetForm() {
+        const form = document.getElementById("crm-form");
+        if (form && form.tagName === "FORM") {
+            form.reset();
+        } else {
+            document.getElementById("postalcode").value = "";
+            document.getElementById("prefecture").value = "";
+            document.getElementById("city").value = "";
+            document.getElementById("town").value = "";
+            document.getElementById("travel-time").value = "";
+        }
+        formContainer.style.display = "none";
+    }
+
+    // サーバーにデータを保存する関数
+    const saveCasesToServer = (cases) => {
+        fetch('https://35.190.238.250/api/saveCases', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cases)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`サーバーエラー: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('サーバーにデータが保存されました:', data);
+        })
+        .catch(error => {
+            console.error('サーバーへのデータ保存中にエラーが発生しました:', error);
+            alert('サーバーへのデータ保存中にエラーが発生しました。詳細はコンソールを確認してください。');
+        });
+    };
+    // 保存された案件の表示
+    const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
+    displaySavedCases(savedCases);
 
     // 住所の入力フィールドを非表示にする
     if (addressInput) {
@@ -48,8 +300,8 @@ townInput.placeholder = "番地";
 addressInput.parentNode.insertBefore(townInput, addressInput);
 
 document.getElementById("create-case-location").addEventListener("click", function() {
-    formContainer.classList.toggle("hidden");
 });
+
 
 const companies = [
     { name: "丸松産業", location: { lat: 35.808179558872375, lng: 139.54994368553108 } },
@@ -157,158 +409,7 @@ function populateCompanies(userLocation) {
             alert("案件を保存する前に会社を選択してください。");
             return;
         }
-
-        const deadlineValue = deadlineInput.value;
-
-        const caseData = {
-            customerName: customerNameInput.value || "ー",
-            estimateDate: estimateDateInput.value || "ー",
-            prefecture: prefectureInput.value || "ー",
-            city: cityInput.value || "ー",
-            town: townInput.value || "ー",
-            company: processingCompanySelect.value || "ー",
-            travelTime: travelTimeInput.value || "ー",
-            postalCode: postalCodeInput.value || "ー",
-            address: addressInput.value || "ー",
-            price: priceInput.value || "ー",
-            status: statusSelect.value || "ー",
-            phoneNumber: phoneNumberInput.value || "ー",
-            deadline: deadlineValue ? new Date(deadlineValue).toISOString() : "ー", // ISO形式で保存
-        };
-
-        // ローカルストレージから案件リストを取得
-        const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
-
-        if (editingIndex !== null) {
-            // 既存の案件を更新
-            savedCases[editingIndex] = caseData;
-            editingIndex = null;
-        } else {
-            // 新しい案件をリストに追加
-            savedCases.push(caseData);
-        }
-
-        // 期限順に並べ替え
-        savedCases.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-        // ローカルストレージに保存
-        localStorage.setItem("savedCases", JSON.stringify(savedCases));
-
-        // 案件リストを再描画
-        displaySavedCases(savedCases);
-
-        // プッシュ通知
-        showPushNotification("案件を保存しました");
-
-        // フォームをリセット
-        resetForm();
-    });
-
-   // 案件表示
-   const displaySavedCases = (savedCases) => {
-    caseList.innerHTML = ""; // 現在のリストをクリア
-
-    savedCases.forEach((caseData, index) => {
-        const caseItem = document.createElement("div");
-        caseItem.classList.add("case-item");
-        caseItem.innerHTML = `
-            <p>お客様名: ${caseData.customerName}</p>
-            <p>電話番号: ${caseData.phoneNumber}</p>
-            <p>住所: ${caseData.prefecture} ${caseData.city} ${caseData.town}</p>
-            <p>見積もり日: ${caseData.estimateDate}</p>
-            <p>回答期限: ${new Date(caseData.deadline).toLocaleDateString()}</p>
-            <p>ステータス: ${caseData.status}</p>            
-            <p>代金: ${caseData.price}</p>
-            <p>中間処理企業: ${caseData.company}</p>
-            <p>移動時間: ${caseData.travelTime}</p>
-
-            <button class="edit-case" data-index="${index}">編集</button>
-            <button class="delete-case" data-index="${index}">削除</button>
-        `;
-        caseList.appendChild(caseItem);
-    });
-
-
-        // 編集ボタンのクリックイベント
-        document.querySelectorAll(".edit-case").forEach((button) => {
-            button.addEventListener("click", (event) => editCase(event.target.dataset.index));
-        });
-
-        // 削除ボタンのクリックイベント
-        document.querySelectorAll(".delete-case").forEach((button) => {
-            button.addEventListener("click", (event) => {
-                if (confirm("削除でお間違え無いですか？")) {
-                    deleteCase(event.target.dataset.index);
-                }
-            });
-        });
-    };
-
-    // 案件編集
-    const editCase = (index) => {
-        const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
-        const caseData = savedCases[index];
-
-        if (!caseData) {
-            console.error("案件データが見つかりません");
-            return;
-        }
-
-        processingCompanySelect.value = caseData.company;
-        travelTimeInput.value = caseData.travelTime;
-        postalCodeInput.value = caseData.postalCode;
-        addressInput.value = caseData.address;
-        deadlineInput.value = new Date(caseData.deadline).toISOString().split('T')[0]; // 日付形式に変換
-        customerNameInput.value = caseData.customerName;
-        estimateDateInput.value = caseData.estimateDate;
-
-        editingIndex = index;
-        formContainer.classList.remove("hidden");
-    };
-
-    // 案件削除
-    const deleteCase = (index) => {
-        const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
-        savedCases.splice(index, 1);
-
-        // ローカルストレージに保存
-        localStorage.setItem("savedCases", JSON.stringify(savedCases));
-
-        // 案件リストを再描画
-        displaySavedCases(savedCases);
-    };
-
-    // プッシュ通知の表示
-    const showPushNotification = (message) => {
-        if (Notification.permission === "granted") {
-            new Notification(message);
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    new Notification(message);
-                }
-            });
-        }
-    };
-
-    // フォームのリセット
-    function resetForm() {
-        const form = document.getElementById("crm-form");
-        if (form && form.tagName === "FORM") {
-            form.reset();
-        } else {
-            document.getElementById("postalcode").value = "";
-            document.getElementById("prefecture").value = "";
-            document.getElementById("city").value = "";
-            document.getElementById("town").value = "";
-            document.getElementById("travel-time").value = "";
-        }
-        editingIndex = null;
-    }
-
-    // 保存された案件の表示
-    const savedCases = JSON.parse(localStorage.getItem("savedCases")) || [];
-    displaySavedCases(savedCases);
+});
 
     // 自動で住所読み込み
     document.getElementById("create-case-location").addEventListener("click", async function () {
@@ -443,6 +544,7 @@ function populateCompanies(userLocation) {
                 getTravelTime(userLocation, destination, function(travelTimeText) {
                     travelTimeInput.value = travelTimeText;
                 });
+
             });
         }
     });

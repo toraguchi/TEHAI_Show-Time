@@ -83,19 +83,54 @@ header {
 }
 
 /* 案件リスト */
-.case-item {
-    background-color: #f9f9f9;
+.case-header, .case-item {
+    display: flex;
+    justify-content: space-between;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 1px; /* 案件毎の間を詰める */
 }
+.case-header span{
+    flex: 1;
+    text-align: center;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background-color: #333; /* 箱の中を濃いグレーに */
+    color: white; /* 文字を白に */
+    font-size: 0.7em; 
+}
+.case-item span {
+    flex: 1;
+    text-align: center;
+    padding: 5px;
+    border: 1px solid #ccc;
+}
+
+.case-item span:last-child {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.case-item button {
+    margin: 0 5px;
+}
+
+.case-item button.edit-case {
+    background-color: #3498db;
+}
+
+.case-item button.delete-case {
+    background-color: #e74c3c;
+}
+
+.case-item button:hover {
+    opacity: 0.8;
+}
+
 /* 編集中の案件をハイライト */
 .editing {
-    background-color: #fffacd; /* 薄黄色 */
-}
-.case-item p {
-    margin: 5px 0;
+    background-color: #c8be65; /* 薄黄色 */
 }
 
 .case-item button {
@@ -113,4 +148,28 @@ header {
 
 .case-item button:hover {
     opacity: 0.8;
+}
+
+/* 住所以外の枠のサイズを文字に合わせる */
+#case-list .case-item span:not(:nth-child(4)) {
+    display: inline-block;
+    width: auto;
+    padding: 5px;
+    font-size: 0.7em; /* 案件作成フォームと同じサイズに設定 */
+    box-sizing: border-box;
+}
+
+#case-list .case-item span:nth-child(4) {
+    width: 100%;
+    padding: 5px;
+    font-size: 0.7em; /* 案件作成フォームと同じサイズに設定 */
+    box-sizing: border-box;
+}
+
+/* 案件作成フォームの文字サイズ */
+#crm-form input[type="text"],
+#crm-form input[type="number"],
+#crm-form input[type="date"],
+#crm-form select {
+    font-size: 0.7em; /* 案件作成フォームの文字サイズ */
 }
