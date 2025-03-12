@@ -115,13 +115,8 @@ const displaySavedCases = (savedCases) => {
     <div class="case-header">
         <span>No.</span>
         <span>お客様名</span>
-        <span>電話番号</span>
-        <span>住所</span>
-        <span>見積もり日</span>
-        <span>回答期限</span>
-        <span>ステータス</span>
-        <span>代金</span>
-        <span>中間処理企業</span>
+        <span>市区町村</span>
+        <span>中間処理場</span>
         <span>移動時間</span>
         <span>操作</span>
     </div>
@@ -133,50 +128,63 @@ const displaySavedCases = (savedCases) => {
         caseElement.innerHTML = `
             <span>${savedCases.length - index}</span>
             <span>${caseItem.customerName}</span>
-            <span>${caseItem.phoneNumber}</span>
-            <span>${caseItem.prefecture} ${caseItem.city} ${caseItem.town}</span>
-            <span>${caseItem.estimateDate}</span>
-            <span>${caseItem.deadline}</span>
-            <span>${caseItem.status}</span>
-            <span>${caseItem.price}</span>
+            <span>${caseItem.city}</span>
             <span>${caseItem.company}</span>
             <span>${caseItem.travelTime}</span>
             <span>
-                    <button class="edit-case" data-index="${index}">編集</button>
-                    <button class="delete-case" data-index="${index}">削除</button>
-                </span>
-            `;
+                <button class="edit-case" data-index="${index}">編集</button>
+                <button class="delete-case" data-index="${index}">削除</button>
+            </span>
+        `;
 
-            // ステータスに応じてハイライト
-            if (caseItem.status === "成約") {
-                caseElement.style.backgroundColor = "#ADD8E6"; // 水色
-            } else if (caseItem.status === "不成約") {
-                caseElement.style.backgroundColor = "#FFC0CB"; // ピンク色
-            } else if (caseItem.status === "検討中") {
-                caseElement.style.backgroundColor = "#FFFACD"; // 薄黄色
+        // 案件をクリックしたら全ての情報を表示
+        caseElement.addEventListener("click", () => {
+            alert(`
+                お客様名: ${caseItem.customerName}
+                電話番号: ${caseItem.phoneNumber}
+                郵便番号: ${caseItem.postalCode}
+                住所: ${caseItem.address}
+                見積もり日: ${caseItem.estimateDate}
+                回答期限: ${caseItem.deadline}
+                ステータス: ${caseItem.status}
+                代金: ${caseItem.price}
+                中間処理企業: ${caseItem.company}
+                移動時間: ${caseItem.travelTime}
+            `);
+        });
+
+        // ステータスに応じてハイライト
+        if (caseItem.status === "成約") {
+            caseElement.style.backgroundColor = "#ADD8E6"; // 水色
+        } else if (caseItem.status === "不成約") {
+            caseElement.style.backgroundColor = "#FFC0CB"; // ピンク色
+        } else if (caseItem.status === "検討中") {
+            caseElement.style.backgroundColor = "#FFFACD"; // 薄黄色
+        }
+
+        caseList.appendChild(caseElement);
+    });
+
+    // 編集ボタンのクリックイベント
+    document.querySelectorAll(".edit-case").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation(); // 親のクリックイベントを発火させない
+            resetForm();
+            editCase(event.target.dataset.index);
+            formContainer.style.display = "block"; // フォームを表示
+            saveCaseButton.textContent = "更新"; // ボタンのテキストを更新に変更
+        });
+    });
+
+    // 削除ボタンのクリックイベント
+    document.querySelectorAll(".delete-case").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation(); // 親のクリックイベントを発火させない
+            if (confirm("削除でお間違え無いですか？")) {
+                deleteCase(event.target.dataset.index);
             }
-
-            caseList.appendChild(caseElement);
         });
-
-        // 編集ボタンのクリックイベント
-        document.querySelectorAll(".edit-case").forEach((button) => {
-            button.addEventListener("click", (event) => {
-                resetForm();
-                editCase(event.target.dataset.index);
-                formContainer.style.display = "block"; // フォームを表示
-                saveCaseButton.textContent = "更新"; // ボタンのテキストを更新に変更
-            });
-        });
-
-        // 削除ボタンのクリックイベント
-        document.querySelectorAll(".delete-case").forEach((button) => {
-            button.addEventListener("click", (event) => {
-                if (confirm("削除でお間違え無いですか？")) {
-                    deleteCase(event.target.dataset.index);
-                }
-            });
-        });
+    });
         // 案件削除
 const deleteCase = (index) => {
     const savedCases = JSON.parse(localStorage.getItem("cases")) || [];
